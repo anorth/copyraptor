@@ -1,4 +1,5 @@
 (function() {
+  //TODO(alex): d/l from s3
   var changes = [
     { match: {id: "text"}, text: "Copy written by awesome marketing mofo" },
     { match: {id: "yamum"}, text: "Copy Raptor FTW" },
@@ -62,8 +63,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", function() {
-    // TEMP TEST SCAFFOLDING
-
     //TODO(jeeva): just do this on load, in a button for testing
     var firstTime = true;
     function setupInjector() {
@@ -84,47 +83,17 @@
     // Uncomment to setup injector onload
     setupInjector();
 
-    document.querySelector("#button1").addEventListener("click", function() {
-      setupInjector();
-    });
-
     var nextId = 1;
     document.querySelector("#button2").addEventListener("click", function() {
-      var node = document.querySelector("#yamum");
       var newP = document.createElement('p');
       newP.innerHTML = "dynamically created placeholder content";
+      document.querySelector("#reference").appendChild(newP);
+
+      newP = newP.cloneNode(true);
       newP.setAttribute("id", "p-" + nextId);
       nextId++;
+      console.log(newP);
       document.querySelector("#content").appendChild(newP);
     });
   });
 })();
-
-//window.onload = function() {
-//  var text = document.querySelector("#text");
-//
-//  var button1 = document.querySelector("#button");
-//  var button2 = document.querySelector("#button");
-//
-//  var observer = new MutationObserver(function(mutations) {
-//      mutations.forEach(function(mutation) {
-//        //var entry = {
-//        //  mutation: mutation,
-//        //  el: mutation.target,
-//        //  value: mutation.target.textContent,
-//        //  oldValue: mutation.oldValue
-//        //};
-//        if (mutation.target.textContent != newVal) {
-//          mutation.target.textContent = newVal;
-//        }
-//      });
-//    });
-//
-//  observer.observe(text, {
-//      attributes: true,
-//      childList: true,
-//      characterData: true,
-//      characterDataOldValue: true,
-//      subtree: true
-//  });
-//};

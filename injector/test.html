@@ -7,14 +7,18 @@
   <script src="injector.js"></script>
 </head>
 <body>
-  <div id="content">
-    <div id="text" style="border: 1px solid gray">Place holder text, that will change</div>
-    <br />
-    <br />
-    <div id="yamum" style="border: 1px solid gray">Other text, that won't change</div>
+<p>Left col is identical to the right col, except copy raptor is only updating nodes on the left. The right is just for reference.</p>
+  <div id="content" style="width: 30%; border: 1px solid gray; float: left; margin: 30px; padding: 5px">
+    <p id="text">Place holder text, that will change</p>
+    <p id="yamum">Other text, that won't change</p>
   </div>
 
-  <button id="button1">Start change manager (can do onload as well)</button>
+  <div id="reference" style="width: 30%; border: 1px solid gray; float: left; margin: 30px; padding: 5px">
+    <p>Place holder text, that will change</p>
+    <p>Other text, that won't change</p>
+  </div>
+
+  <div style="clear: both"></div>
   <button id="button2">Do DOM mutation</button>
 </body>
 </html>
