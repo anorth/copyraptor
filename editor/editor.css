@@ -1,0 +1,84 @@
+.copyraptor-app {
+  z-index: 10000000;
+}
+
+.copyraptor-app .main-panel {
+  /* TODO: make it change in case want to edit very top of page */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  color: white;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.copyraptor-app .main-panel h1 {
+  font-weight: normal;
+  font-size: 30px;
+  display: inline-block;
+}
+
+.copyraptor-app .main-panel .controls {
+  display: inline-block;
+  margin-left: 30px;
+}
+
+.copyraptor-app .focus-rect-segment {
+  overflow: hidden;
+  position: absolute;
+  opacity: 0.33;
+}
+.copyraptor-app .editing .focus-rect-segment {
+  opacity: 0.66;
+}
+
+.copyraptor-app .focus-rect-segment:after {
+  content: ' ';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.copyraptor-app .left.focus-rect-segment {
+  transform: skew(0deg, 45deg);
+}
+.copyraptor-app .left.focus-rect-segment:after {
+  top: -24px;
+  bottom: 24px;
+  background: linear-gradient(to left, black, rgba(0,0,0,0));
+  transform: skew(0deg, -63.43deg);
+}
+
+.copyraptor-app .right.focus-rect-segment {
+  transform: skew(0deg, -45deg);
+}
+.copyraptor-app .right.focus-rect-segment:after {
+  top: -24px;
+  bottom: 24px;
+  background: linear-gradient(to right, black, rgba(0,0,0,0));
+  transform: skew(0deg, 63.43deg);
+}
+
+.copyraptor-app .top.focus-rect-segment {
+  transform: skew(45deg, 0deg);
+}
+.copyraptor-app .top.focus-rect-segment:after {
+  left: -24px;
+  right: 24px;
+  background: linear-gradient(to top, black, rgba(0,0,0,0));
+  transform: skew(-63.43deg, 0deg);
+}
+
+.copyraptor-app .bottom.focus-rect-segment {
+  transform: skew(-45deg, 0deg);
+}
+.copyraptor-app .bottom.focus-rect-segment:after {
+  left: -24px;
+  right: 24px;
+  background: linear-gradient(to bottom, black, rgba(0,0,0,0));
+  transform: skew(63.43deg, 0deg);
+}
