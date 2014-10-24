@@ -3,14 +3,14 @@
 
   var blobHost = 'https://devstore.copyraptor.com.s3.amazonaws.com';
 
-  var sitekey = undefined;
-  var changes = undefined;
+  var sitekey;
+  var changes;
   var domContentHasLoaded = false;
   var initialChangesApplied = false;
 
   // Exported functions
-  function init(site, content) {
-    sitekey = site;
+  function initialContent(content) {
+    console.log("Initialising content");
     changes = content;
   }
 
@@ -20,8 +20,12 @@
 
   // Private functions
   function save(success, failure) {
+    if (changes === undefined) {
+      console.log("Refusing to save undefined content");
+      return;
+    }
     var content = JSON.stringify(changes);
-    var payload = "(function() {window.copyraptor.init('" + sitekey + "', " + content + ");})()";
+    var payload = "(function() {window.copyraptor.initialContent(" + content + ");})()";
 
     var xhr = new XMLHttpRequest();
     xhr.open('PUT', blobHost + '/' + sitekey, true);
@@ -123,11 +127,28 @@
     console.log("DOMContentLoaded");
     domContentHasLoaded = true;
     applyInitialChanges();
-    save();
+    //save();
   });
 
+  // Find the script element that loaded this script to extract the site id,
+  // then insert a script element after this to load the content
+  var tags = document.head.querySelectorAll("script");
+  for (var i = 0; i < tags.length; ++i) {
+    var tag = tags[i];
+    sitekey = tag.getAttribute("data-copyraptor-site");
+    if (sitekey !== undefined) { break; }
+  }
+  // TODO(alex): Fallback to site from domain name
+
+  if (sitekey != undefined) {
+    // NOTE(alex): appendChild-style DOM manipulation does not execute the script synchronously.
+    var contentSrc = blobHost + "/" + sitekey;
+    document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
+  }
+
+
   window.copyraptor = {
-    init: init
+    initialContent: initialContent
   };
 
 })(window, document);
