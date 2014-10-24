@@ -1,13 +1,74 @@
-(function() {
-  //TODO(alex): d/l from s3
-  var changes = [
-    { match: {id: "text"}, text: "Copy written by awesome marketing mofo" },
-    { match: {id: "yamum"}, text: "Copy Raptor FTW" },
-    { match: {id: "p-1"}, text: "Copy updated in dynamic content" },
-    { match: {id: "p-2"}, text: "Done again, how good are we" },
-    { match: {id: "p-3"}, text: "Even a third time, but this is the last..." }
-  ];
-  
+(function(window, document) {
+  'use strict';
+
+  var blobHost = 'https://devstore.copyraptor.com.s3.amazonaws.com';
+
+  var sitekey = undefined;
+  var changes = undefined;
+  var domContentHasLoaded = false;
+  var initialChangesApplied = false;
+
+  // Exported functions
+  function init(site) {
+    sitekey = site;
+
+    // TODO: load and inject
+    load(site, function(data) {
+      console.log("Remote content loaded");
+      changes = data;
+      applyInitialChanges();
+    }, function(err) {
+      console.log(err);
+    });
+  }
+
+  function put(matcher, value) {
+
+  }
+
+
+  // Private functions
+  function save(site, data, success, failure) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', blobHost + '/' + site, true);
+    xhr.onload = function (e) {
+      if (this.status == 200) {
+        success(this.responseText);
+      } else {
+        failure(e);
+      }
+    };
+
+    xhr.send(JSON.stringify(data));
+  }
+
+  function load(site, success, failure) {
+    if (site === 'injectordemo') {
+      success([
+        { match: {id: "text"}, text: "Copy written by awesome marketing mofo" },
+        { match: {id: "yamum"}, text: "Copy Raptor FTW" },
+        { match: {id: "p-1"}, text: "Copy updated in dynamic content" },
+        { match: {id: "p-2"}, text: "Done again, how good are we" },
+        { match: {id: "p-3"}, text: "Even a third time, but this is the last..." }
+      ]);
+      return;
+    }
+
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', blobHost + '/' + site, true);
+    xhr.responseType = "json";
+    xhr.onload = function (e) {
+      if (this.status == 200) {
+        success(this.response);
+      } else {
+        failure(e);
+      }
+    };
+
+    xhr.send();
+  }
+
   function getElt(expr) {
     //TODO(jeeva): other match types
     if (expr.id) {
@@ -31,10 +92,30 @@
     } else {
       console.error("Unknown change type", spec);
     }
-  };
+  }
+
+  /** Applies changes if both they and the DOM have loaded. */
+  function applyInitialChanges() {
+    if (initialChangesApplied) { return; }
+    if (changes !== undefined && domContentHasLoaded) {
+      initialChangesApplied = true;
+      changes.forEach(function (spec) {
+        var elt = getElt(spec.match);
+        if (!elt) {
+          console.log("No elt (yet) for spec", spec);
+          return;
+        }
+
+        injectContent(elt, spec);
+      });
+
+      watchDom();
+    }
+  }
 
   function watchDom() {
     var observer = new MutationObserver(function(mutations) {
+      console.log("Mutation");
       mutations.forEach(function(mutation) {
         //var entry = {
         //  mutation: mutation,
@@ -63,37 +144,13 @@
   }
 
   document.addEventListener("DOMContentLoaded", function() {
-    //TODO(jeeva): just do this on load, in a button for testing
-    var firstTime = true;
-    function setupInjector() {
-      if (firstTime) {
-        changes.forEach(function(spec) {
-          var elt = getElt(spec.match);
-          if (!elt) {
-            console.log("No matching elt", spec);
-            return;
-          }
-
-          injectContent(elt, spec);
-        });
-        watchDom();
-        firstTime = false;
-      }
-    }
-    // Uncomment to setup injector onload
-    setupInjector();
-
-    var nextId = 1;
-    document.querySelector("#button2").addEventListener("click", function() {
-      var newP = document.createElement('p');
-      newP.innerHTML = "dynamically created placeholder content";
-      document.querySelector("#reference").appendChild(newP);
-
-      newP = newP.cloneNode(true);
-      newP.setAttribute("id", "p-" + nextId);
-      nextId++;
-      console.log(newP);
-      document.querySelector("#content").appendChild(newP);
-    });
+    console.log("DOMContentLoaded");
+    domContentHasLoaded = true;
+    applyInitialChanges();
   });
-})();
+
+  window.copyraptor = {
+    init: init
+  };
+
+})(window, document);

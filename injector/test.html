@@ -5,6 +5,26 @@
   <title>DOM Change Test</title>
 
   <script src="injector.js"></script>
+  <script>
+    window.copyraptor.init('injectordemo');
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var nextId = 1;
+      document.querySelector("#button2").addEventListener("click", function() {
+        var newP = document.createElement('p');
+        newP.innerHTML = "dynamically created placeholder content";
+        document.querySelector("#reference").appendChild(newP);
+
+        newP = newP.cloneNode(true);
+        newP.setAttribute("id", "p-" + nextId);
+        nextId++;
+        console.log(newP);
+        document.querySelector("#content").appendChild(newP);
+      });
+    });
+  </script>
 </head>
 <body>
 <p>Left col is identical to the right col, except copy raptor is only updating nodes on the left. The right is just for reference.</p>
