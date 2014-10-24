@@ -44,13 +44,13 @@
 
   function load(site, success, failure) {
     if (site === 'injectordemo') {
-      success([
-        { match: {id: "text"}, text: "Copy written by awesome marketing mofo" },
-        { match: {id: "yamum"}, text: "Copy Raptor FTW" },
-        { match: {id: "p-1"}, text: "Copy updated in dynamic content" },
-        { match: {id: "p-2"}, text: "Done again, how good are we" },
-        { match: {id: "p-3"}, text: "Even a third time, but this is the last..." }
-      ]);
+      success({
+        "text": {text: "Copy written by awesome marketing mofo"},
+        "yamum": {text: "Copy Raptor FTW"},
+        "p-1": {text: "Copy updated in dynamic content"},
+        "p-2": {text: "Done again, how good are we"},
+        "p-3": {text: "Even a third time, but this is the last..."}
+      });
       return;
     }
 
@@ -69,20 +69,26 @@
     xhr.send();
   }
 
-  function getElt(expr) {
+  function findElement(match) {
     //TODO(jeeva): other match types
-    if (expr.id) {
-      return document.getElementById(expr.id);
-    }
-  };
+    return document.getElementById(match);
+  }
 
-  function matches(elt, expr) {
+  function matches(elt, match) {
     //TODO(jeeva): other match types
-    if (expr.id == elt.id) {
+    if (match == elt.id) {
       return true;
     }
 
     return false;
+  }
+
+  function forEachChange(fn) {
+    for (var match in changes) {
+      if (changes.hasOwnProperty(match)) {
+        fn(match, changes[match]);
+      }
+    }
   }
 
   function injectContent(elt, spec) {
@@ -99,10 +105,10 @@
     if (initialChangesApplied) { return; }
     if (changes !== undefined && domContentHasLoaded) {
       initialChangesApplied = true;
-      changes.forEach(function (spec) {
-        var elt = getElt(spec.match);
+      forEachChange(function(match, spec) {
+        var elt = findElement(match);
         if (!elt) {
-          console.log("No elt (yet) for spec", spec);
+          console.log("No elt (yet) for match", match, spec);
           return;
         }
 
@@ -124,9 +130,9 @@
         //  oldValue: mutation.oldValue
         //};
         for (var i in mutation.addedNodes) {
-          var elt = mutation.addedNodes[i];
-          changes.forEach(function(spec) {
-            if (matches(elt, spec.match)) {
+          forEachChange(function(match, spec) {
+            var elt = mutation.addedNodes[i];
+            if (matches(elt, match)) {
               injectContent(elt, spec);
             }
           });
