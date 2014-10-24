@@ -9,64 +9,34 @@
   var initialChangesApplied = false;
 
   // Exported functions
-  function init(site) {
+  function init(site, content) {
     sitekey = site;
-
-    // TODO: load and inject
-    load(site, function(data) {
-      console.log("Remote content loaded");
-      changes = data;
-      applyInitialChanges();
-    }, function(err) {
-      console.log(err);
-    });
+    changes = content;
   }
 
-  function put(matcher, value) {
-
+  function put(match, spec) {
+    content[match] = spec;
   }
-
 
   // Private functions
-  function save(site, data, success, failure) {
+  function save(success, failure) {
+    var content = JSON.stringify(changes);
+    var payload = "(function() {window.copyraptor.init('" + sitekey + "', " + content + ");})()";
+
     var xhr = new XMLHttpRequest();
-    xhr.open('PUT', blobHost + '/' + site, true);
+    xhr.open('PUT', blobHost + '/' + sitekey, true);
+    xhr.setRequestHeader('Content-Type', 'application/javascript');
     xhr.onload = function (e) {
       if (this.status == 200) {
-        success(this.responseText);
+        console.log("PUT succeeded");
+        if (success !== undefined) success(this.responseText);
       } else {
-        failure(e);
+        console.log("PUT failed", e);
+        if (failure !== undefined) failure(e);
       }
     };
 
-    xhr.send(JSON.stringify(data));
-  }
-
-  function load(site, success, failure) {
-    if (site === 'injectordemo') {
-      success({
-        "text": {text: "Copy written by awesome marketing mofo"},
-        "yamum": {text: "Copy Raptor FTW"},
-        "p-1": {text: "Copy updated in dynamic content"},
-        "p-2": {text: "Done again, how good are we"},
-        "p-3": {text: "Even a third time, but this is the last..."}
-      });
-      return;
-    }
-
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', blobHost + '/' + site, true);
-    xhr.responseType = "json";
-    xhr.onload = function (e) {
-      if (this.status == 200) {
-        success(this.response);
-      } else {
-        failure(e);
-      }
-    };
-
-    xhr.send();
+    xhr.send(payload);
   }
 
   function findElement(match) {
@@ -153,6 +123,7 @@
     console.log("DOMContentLoaded");
     domContentHasLoaded = true;
     applyInitialChanges();
+    save();
   });
 
   window.copyraptor = {
