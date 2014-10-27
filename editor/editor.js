@@ -5,7 +5,7 @@ var editor;
 
 function appmain() {
 
-  var main = new MainPanel();
+  var main = new MainPanel(window.copyraptor);
 
   document.body.appendChild(E('link', {
     href: 'editor.css',
@@ -16,7 +16,7 @@ function appmain() {
       divc('copyraptor-app', main));
 }
 
-function MainPanel() {
+function MainPanel(copyraptor) {
   var me = this;
 
   var focusRect = new FocusRect();
@@ -29,13 +29,19 @@ function MainPanel() {
       // reset the focus rect around the element.
       focusRect.wrap(editor.currentElem());
     },
-    onAttached: function() {
+    onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
     },
-    onDetached: function() {
+    onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
+      var match = elem.getAttribute('id');
+      if (!!match) {
+        console.log("Storing edit to " + match);
+        copyraptor.put(match, {'text': elem.textContent});
+        copyraptor.save();
+      }
     }
   });
 
@@ -144,7 +150,7 @@ function Editor(listener) {
       elem.addEventListener(type, handlers[type]);
     }
 
-    listener.onAttached();
+    listener.onAttached(currentElem);
   };
 
   me.detach = function() {
@@ -157,9 +163,9 @@ function Editor(listener) {
     }
 
     currentElem.contentEditable = false;
-    currentElem = null;
+    listener.onDetached(currentElem);
 
-    listener.onDetached();
+    currentElem = null;
   };
 
   me.attached = function() {

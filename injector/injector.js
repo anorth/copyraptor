@@ -4,7 +4,7 @@
   var blobHost = 'https://devstore.copyraptor.com.s3.amazonaws.com';
 
   var sitekey;
-  var changes;
+  var changes = {}; // Overwritten by initialContent
   var domContentHasLoaded = false;
   var initialChangesApplied = false;
 
@@ -15,7 +15,7 @@
   }
 
   function put(match, spec) {
-    content[match] = spec;
+    changes[match] = spec;
   }
 
   // Private functions
@@ -67,7 +67,7 @@
 
   function injectContent(elt, spec) {
     //TODO(jeeva): other replace methods
-    if (spec.text)  {
+    if (spec.text) {
       elt.textContent = spec.text;
     } else {
       console.error("Unknown change type", spec);
@@ -148,7 +148,9 @@
 
 
   window.copyraptor = {
-    initialContent: initialContent
+    initialContent: initialContent,
+    put: put,
+    save: save
   };
 
 })(window, document);
