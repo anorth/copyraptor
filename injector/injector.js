@@ -5,25 +5,72 @@
 
   var sitekey;
   var changes = {}; // Overwritten by initialContent
+  var originalContent = {}; // Content before overwriting
   var domContentHasLoaded = false;
   var initialChangesApplied = false;
 
   // Exported functions
   function initialContent(content) {
-    console.log("Initialising content");
+    log("Initialising content", content);
     changes = content;
   }
 
-  function put(match, spec) {
-    changes[match] = spec;
+  function rememberElement(elt) {
+    var match = matcherForElt(elt);
+    if (!!match && !originalContent[match]) {
+      var content = extractContentSpec(elt);
+      log("Remembering " + match, content);
+      originalContent[match] = content;
+    }
+  }
+
+  function specsAreEquivalent(a, b) {
+    return a !== undefined && b !== undefined && a.text === b.text;
+  }
+
+  function putElement(elt) {
+    var content = extractContentSpec(elt);
+    var match = matcherForElt(elt);
+    if (!!match) {
+      if (specsAreEquivalent(content, originalContent[match])) {
+        log("Element " + match + " is in original state");
+        changes[match] = undefined;
+      } else {
+        log("Storing new spec for " + match, content);
+        changes[match] = content;
+      }
+    }
+  }
+
+  function resetElement(elt) {
+    var match = matcherForElt(elt);
+    if (!!match && !!originalContent[match]) {
+      log("Resetting " + match);
+      injectContent(elt, originalContent[match]);
+      changes[match] = undefined;
+    }
+  }
+
+  function clear() {
+    log("Clear");
+    foreach(originalContent, function(match, spec) {
+      var elt = findElement(match);
+      if (!!elt) {
+        injectContent(elt, spec);
+      } else {
+        log("Can't find elt for original content for " + match);
+      }
+    });
+    changes = {};
   }
 
   // Private functions
   function save(success, failure) {
     if (changes === undefined) {
-      console.log("Refusing to save undefined content");
+      log("Refusing to save undefined content");
       return;
     }
+    log("Saving", changes);
     var content = JSON.stringify(changes);
     var payload = "(function() {window.copyraptor.initialContent(" + content + ");})()";
 
@@ -32,15 +79,19 @@
     xhr.setRequestHeader('Content-Type', 'application/javascript');
     xhr.onload = function (e) {
       if (this.status == 200) {
-        console.log("PUT succeeded");
+        log("Save succeeded");
         if (success !== undefined) success(this.responseText);
       } else {
-        console.log("PUT failed", e);
+        log("Save failed", e);
         if (failure !== undefined) failure(e);
       }
     };
 
     xhr.send(payload);
+  }
+
+  function matcherForElt(elt) {
+    return elt.id;
   }
 
   function findElement(match) {
@@ -57,12 +108,17 @@
     return false;
   }
 
-  function forEachChange(fn) {
-    for (var match in changes) {
-      if (changes.hasOwnProperty(match)) {
-        fn(match, changes[match]);
+  function foreach(obj, fn) {
+    for (var match in  obj) {
+      if (obj.hasOwnProperty(match)) {
+        fn(match, obj[match]);
       }
     }
+  }
+
+  function extractContentSpec(elt) {
+    // TODO(alex): More sophisticated content
+    return {text: elt.textContent};
   }
 
   function injectContent(elt, spec) {
@@ -79,13 +135,14 @@
     if (initialChangesApplied) { return; }
     if (changes !== undefined && domContentHasLoaded) {
       initialChangesApplied = true;
-      forEachChange(function(match, spec) {
+      foreach(changes, function(match, spec) {
         var elt = findElement(match);
         if (!elt) {
-          console.log("No elt (yet) for match", match, spec);
+          log("No elt (yet) for match", match, spec);
           return;
         }
 
+        originalContent[match] = extractContentSpec(elt);
         injectContent(elt, spec);
       });
 
@@ -95,7 +152,7 @@
 
   function watchDom() {
     var observer = new MutationObserver(function(mutations) {
-      console.log("Mutation");
+      log("Mutation");
       mutations.forEach(function(mutation) {
         //var entry = {
         //  mutation: mutation,
@@ -104,7 +161,7 @@
         //  oldValue: mutation.oldValue
         //};
         for (var i in mutation.addedNodes) {
-          forEachChange(function(match, spec) {
+          foreach(changes, function(match, spec) {
             var elt = mutation.addedNodes[i];
             if (matches(elt, match)) {
               injectContent(elt, spec);
@@ -123,8 +180,18 @@
     });
   }
 
+  function log(msg) {
+    var args = Array.prototype.slice.call(arguments, 0);
+    if (args.length) {
+      args[0] = "[Copyraptor] " + args[0];
+    }
+    console.log.apply(console, args);
+  }
+
+  // Hook into document
+
   document.addEventListener("DOMContentLoaded", function() {
-    console.log("DOMContentLoaded");
+    log("DOMContentLoaded");
     domContentHasLoaded = true;
     applyInitialChanges();
     //save();
@@ -149,7 +216,10 @@
 
   window.copyraptor = {
     initialContent: initialContent,
-    put: put,
+    rememberElement: rememberElement,
+    putElement: putElement,
+    resetElement: resetElement,
+    clear: clear,
     save: save
   };
 

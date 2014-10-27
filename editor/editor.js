@@ -32,16 +32,12 @@ function MainPanel(copyraptor) {
     onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
+      copyraptor.rememberElement(elem);
     },
     onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
-      var match = elem.getAttribute('id');
-      if (!!match) {
-        console.log("Storing edit to " + match);
-        copyraptor.put(match, {'text': elem.textContent});
-        copyraptor.save();
-      }
+      copyraptor.putElement(elem);
     }
   });
 
@@ -56,6 +52,18 @@ function MainPanel(copyraptor) {
           }
         })
       ),
+      button('Save', function() {
+        var me = this;
+        me.textContent = "Saving...";
+        copyraptor.save(
+            function () {
+              me.textContent = "Save"
+            }, function (err) {
+              alert("Save failed: " + err);
+              me.textContent = "Save"
+            });
+      }),
+      button('Reset all', function() {copyraptor.clear();}),
       focusRect
     );
 
@@ -232,7 +240,7 @@ function FocusRect() {
       me.bottom = divc('bottom focus-rect-segment',
         absolute({
           left: px(-0.5*thickness - 2*offset),
-          height: px(thickness),
+          height: px(thickness)
         })
       )
     );
@@ -329,6 +337,9 @@ function checkBox(label, initial, listener) {
       type:'checkbox', checked:initial, onchange:onchange }), label);
 }
 
+function button(label, listener) {
+  return E('button', {onclick: listener}, label);
+}
 
 function E(tagName /*, props/children list intermingled */) {
   var elem = document.createElement(tagName);
