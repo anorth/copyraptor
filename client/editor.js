@@ -7,11 +7,11 @@ function appmain() {
 
   var main = new MainPanel(window.copyraptor);
 
-  document.body.appendChild(E('link', {
-    href: 'editor.css',
-    rel: 'stylesheet',
-    type: 'text/css'
-  }));
+  //document.body.appendChild(E('link', {
+  //  href: 'editor.css',
+  //  rel: 'stylesheet',
+  //  type: 'text/css'
+  //}));
   document.body.appendChild(
       divc('copyraptor-app', main));
 }

@@ -180,6 +180,13 @@
     });
   }
 
+  function queryParam(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+    var results = regex.exec(location.search);
+    return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
+  }
+
   function log(msg) {
     var args = Array.prototype.slice.call(arguments, 0);
     if (args.length) {
@@ -189,30 +196,49 @@
   }
 
   // Hook into document
+  var showEditor = !!queryParam("copyraptor");
+
+  // Find the script element that loaded this script to extract the site id
+  var tags = document.head.querySelectorAll("script");
+  var scriptPath;
+  for (var i = 0; i < tags.length; ++i) {
+    var tag = tags[i];
+    sitekey = tag.getAttribute("data-copyraptor-site");
+    if (sitekey !== undefined) {
+      scriptPath = tag.src.split("injector.js")[0];
+      break;
+    }
+  }
+  // TODO(alex): Fallback to site from domain name
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     domContentHasLoaded = true;
     applyInitialChanges();
-    //save();
+
+    if (showEditor) {
+      var editorJs = document.createElement("script");
+      editorJs.type = "text/javascript";
+      editorJs.src = scriptPath + "editor.js";
+
+      var editorCss = document.createElement("link");
+      editorCss.rel = "stylesheet";
+      editorCss.type = "text.css";
+      editorCss.href = scriptPath + "editor.css";
+
+      document.body.appendChild(editorJs);
+      document.body.appendChild(editorCss);
+
+    }
   });
 
-  // Find the script element that loaded this script to extract the site id,
-  // then insert a script element after this to load the content
-  var tags = document.head.querySelectorAll("script");
-  for (var i = 0; i < tags.length; ++i) {
-    var tag = tags[i];
-    sitekey = tag.getAttribute("data-copyraptor-site");
-    if (sitekey !== undefined) { break; }
-  }
-  // TODO(alex): Fallback to site from domain name
 
+  // Insert a script element after this to load the content synchronously
   if (sitekey != undefined) {
     // NOTE(alex): appendChild-style DOM manipulation does not execute the script synchronously.
     var contentSrc = blobHost + "/" + sitekey;
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
-
 
   window.copyraptor = {
     initialContent: initialContent,
