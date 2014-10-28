@@ -1,7 +1,9 @@
-(function(window, document) {
   'use strict';
 
-  var blobHost = 'https://devstore.copyraptor.com.s3.amazonaws.com';
+  module.import(copyraptor.util);
+  var EditorApp = copyraptor.EditorApp;
+
+  var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
   var sitekey;
   var injectedContent = emptyContent(); // Overwritten by initialContent
@@ -160,9 +162,9 @@
   //}
 
   function foreach(obj, fn) {
-    for (var match in  obj) {
-      if (obj.hasOwnProperty(match)) {
-        fn(match, obj[match]);
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        fn(key, obj[key]);
       }
     }
   }
@@ -248,16 +250,26 @@
 
   // Find the script element that loaded this script to extract the site id
   var tags = document.head.querySelectorAll("script");
-  var scriptPath;
   for (var i = 0; i < tags.length; ++i) {
     var tag = tags[i];
+
+    // TODO(alex): Fallback to site from domain name
     sitekey = tag.getAttribute("data-copyraptor-site");
     if (sitekey !== undefined) {
-      scriptPath = tag.src.split("injector.js")[0];
       break;
     }
   }
-  // TODO(alex): Fallback to site from domain name
+
+  copyraptor.injector = {
+    initialContent: initialContent,
+    beginEditingElement: beginEditingElement,
+    endEditingElement: endEditingElement,
+    resetElement: resetElement,
+    clear: clear,
+    save: save
+  };
+  
+  copyraptor.initialContent = initialContent;
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
@@ -265,17 +277,15 @@
     applyInitialChanges();
 
     if (showEditor) {
-      var editorJs = document.createElement("script");
-      editorJs.type = "text/javascript";
-      editorJs.src = scriptPath + "editor.js";
+      document.body.appendChild(E('link', {
+        href: '/copyraptor.css',
+        rel: 'stylesheet',
+        type: 'text/css'
+      }));
 
-      var editorCss = document.createElement("link");
-      editorCss.rel = "stylesheet";
-      editorCss.type = "text.css";
-      editorCss.href = scriptPath + "editor.css";
-
-      document.body.appendChild(editorJs);
-      document.body.appendChild(editorCss);
+      var editing = !!queryParam("e");
+      var editorApp = new EditorApp(copyraptor.injector, editing);
+      editorApp.show();
     }
   });
 
@@ -287,14 +297,3 @@
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
 
-  window.copyraptor = {
-    initialContent: initialContent,
-    beginEditingElement: beginEditingElement,
-    endEditingElement: endEditingElement,
-    resetElement: resetElement,
-    clear: clear,
-    save: save,
-    queryParam: queryParam
-  };
-
-})(window, document);

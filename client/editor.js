@@ -1,27 +1,18 @@
-(function() {
-window.addEventListener('load', appmain);
+
+module.import(copyraptor.util);
+console.log('rgba', rgba, module.rgba);
 
 var editor;
 
-function appmain() {
+copyraptor.EditorApp = EditorApp;
+function EditorApp(injector, editable) {
+  assert(injector);
+  editable = !!editable;
 
-  var main = new MainPanel(window.copyraptor);
-
-  //document.body.appendChild(E('link', {
-  //  href: 'editor.css',
-  //  rel: 'stylesheet',
-  //  type: 'text/css'
-  //}));
-  document.body.appendChild(
-      divc('copyraptor-app', main));
-}
-
-function MainPanel(copyraptor) {
   var me = this;
 
   var focusRect = new FocusRect();
 
-  var editable = !!copyraptor.queryParam("e");
 
   editor = new Editor({
     onChange: function() {
@@ -32,12 +23,12 @@ function MainPanel(copyraptor) {
     onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
-      copyraptor.beginEditingElement(elem);
+      injector.beginEditingElement(elem);
     },
     onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
-      copyraptor.endEditingElement(elem);
+      injector.endEditingElement(elem);
     }
   });
 
@@ -55,7 +46,7 @@ function MainPanel(copyraptor) {
       button('Save', function() {
         var me = this;
         me.textContent = "Saving...";
-        copyraptor.save(
+        injector.save(
             function () {
               me.textContent = "Save"
             }, function (err) {
@@ -63,9 +54,18 @@ function MainPanel(copyraptor) {
               me.textContent = "Save"
             });
       }),
-      button('Reset all', function() {copyraptor.clear();}),
+      button('Reset all', function() {injector.clear();}),
       focusRect
     );
+
+  me.show = function() {
+    if (me.elem.parentNode) {
+      return;
+    }
+
+    document.body.appendChild(
+        divc('copyraptor-app', me));
+  };
 
   document.body.addEventListener('mouseover', contentHandler(enterElem));
   document.body.addEventListener('mouseout',  contentHandler(leaveElem));
@@ -284,157 +284,4 @@ FocusRect.prototype.move = function(x, y, width, height) {
 };
 
 
-function detectEditableElem(leafNode) {
 
-
-
-}
-
-function gradient(direction, col1, col2) {
-  return css({
-    background: 'linear-gradient(to ' + direction + ', ' + col1 + ', ' + col2 + ')'
-  });
-}
-
-
-function rgba(r, g, b, a) {
-  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
-}
-
-function css(props) {
-  return {style: props};
-}
-
-function absolute(props) {
-  props.position = 'absolute';
-
-  return css(props);
-}
-
-function px(num) {
-  return num + 'px';
-}
-
-
-function h1() {
-  return E('h1', args2array(arguments));
-}
-function div() {
-  return E('div', args2array(arguments));
-}
-function divc(klass /*, args */) {
-  var args = args2array(arguments).slice(1); 
-  return E('div', {className:klass}, args);
-}
-
-function checkBox(label, initial, listener) {
-  var chk;
-
-  function onchange() {
-    listener(chk.checked);
-  }
-  return E('span', chk = E('input', {
-      type:'checkbox', checked:initial, onchange:onchange }), label);
-}
-
-function button(label, listener) {
-  return E('button', {onclick: listener}, label);
-}
-
-function E(tagName /*, props/children list intermingled */) {
-  var elem = document.createElement(tagName);
-
-  var args = args2array(arguments).slice(1); 
-  applyItems(elem, args);
-
-
-  return elem;
-}
-
-function copyElemProps(elem, props) {
-  for (var k in props) {
-    if (k === 'style') {
-      var style = props[k];
-      for (var s in style) {
-        elem.style[s] = style[s];
-      }
-    } else {
-      elem[k] = props[k];
-    }
-  }
-}
-
-function applyItems(elem, items) {
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    if (!item) {
-      continue;
-    }
-
-    if (isVanillaObj(item)) {
-      copyElemProps(elem, item);
-      continue;
-    }
-
-    if (item instanceof Array) {
-      applyItems(elem, item);
-      continue;
-    }
-
-    if (typeof item === 'number' || typeof item === 'string' || item instanceof String) {
-      item = document.createTextNode(item);
-    }
-
-    if (item.elem) {
-      item = item.elem;
-      assert(item instanceof Element);
-    }
-
-    elem.appendChild(item);
-  }
-}
-
-function isVanillaObj(x) {
-  return typeof x === 'object' && x.constructor == Object;
-}
-
-function args2array(x) {
-  return Array.prototype.slice.call(x);
-}
-
-function assert(truth, msg) {
-  if (!truth) {
-    throw new Error('Assertion failed' + (msg ? ': ' + msg : '!'));
-  }
-}
-
-function isOrHasChild(elem, maybeChild) {
-  while (maybeChild) {
-    if (maybeChild === elem) {
-      return true;
-    }
-
-    maybeChild = maybeChild.parentNode;
-  }
-
-  return false;
-}
-
-function addClass(elem, klass) {
-  elem.className += ' ' + klass;
-}
-function removeClass(elem, klass) {
-  elem.className = elem.className.replace(new RegExp(' *' + klass + ' *'), ' ');
-}
-
-function isBlock(elem) {
-  return computedStyle(elem).display === 'block';
-}
-
-function computedStyle(elem) {
-  return elem.currentStyle || window.getComputedStyle(elem, ""); 
-}
-
-var TRANSPARENT = rgba(0, 0, 0, 0);
-
-})();
