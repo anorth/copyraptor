@@ -1,3 +1,12 @@
+var CLIENT_FILES = [
+    'util.js',
+    'focus-rect.js',
+    'editor.js',
+    'app.js',
+    'injector.js'
+  ];
+
+
 var express = require('express');
 var fs = require('fs');
 
@@ -14,11 +23,7 @@ app.get('/', function(req, res) {
 var CLIENT_SRC = __dirname + '/../client/';
 
 app.get('/copyraptor.js', function(req, res) {
-  var content = build.bootstrapJs(CLIENT_SRC, [
-    'util.js',
-    'editor.js',
-    'injector.js'
-  ]);
+  var content = build.bootstrapJs(CLIENT_SRC, CLIENT_FILES);
   res.set({
     'Content-Type': 'application/javascript'
   });
