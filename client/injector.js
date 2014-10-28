@@ -33,7 +33,7 @@
       var match = matcherForElt(elt);
       if (contentAreEquivalent(content, originalContent[key])) {
         log("Element for " + key + " is in original state");
-        injectedContent.changes[key] = undefined;
+        delete injectedContent.changes[key];
       } else {
         log("Storing new spec for " + match, content);
         injectedContent.changes[key] = {match: match, content: content};
@@ -46,7 +46,7 @@
     if (key && originalContent[key] !== undefined) {
       log("Resetting elt for " + key);
       injectContent(elt, originalContent[key]);
-      injectedContent.changes[key] = undefined;
+      delete injectedContent.changes[key];
     }
   }
 
@@ -60,7 +60,7 @@
         log("Can't find elt for original content for " + key + ", match " + spec.match);
       }
     });
-    injectedContent.changes = {};
+    injectedContent = emptyContent();
   }
 
   function save(success, failure) {
@@ -88,6 +88,13 @@
     xhr.send(payload);
   }
 
+  function queryParam(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+    var results = regex.exec(location.search);
+    return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
+  }
+
   ///// Private functions /////
 
   function emptyContent() {
@@ -97,23 +104,60 @@
     }
   }
 
-  function matcherForElt(elt) {
-    return elt.id;
+  function matcherForElt(eltToMatch) {
+    var path = [];
+    var ancestor = eltToMatch;
+    while (ancestor !== document.body && ancestor !== undefined) {
+      var siblingIndex = 0, sib = ancestor;
+      while ((sib = sib.previousSibling) !== null) { siblingIndex++; }
+
+      var klass = ancestor.className;
+      if (!!klass) {
+        klass = klass.split(" ");
+        klass.sort();
+      }
+      path.push({
+        "name": ancestor.nodeName,
+        "index": siblingIndex,
+        "id": ancestor.id,
+        "class": klass
+      });
+      // TODO(alex): include signature of existing content
+
+      ancestor = ancestor.parentElement;
+    }
+    return path;
   }
 
   function findElement(match) {
-    //TODO(jeeva): other match types
-    return document.getElementById(match);
+    if (typeof match === 'string') { // Deprecated
+      return document.getElementById(match);
+    }
+
+    var leaf = match[0];
+    if (!!leaf.id) {
+      return document.getElementById(leaf.id);
+    }
   }
 
   function matches(elt, match) {
-    //TODO(jeeva): other match types
-    if (match == elt.id) {
+    if (typeof match === 'string') { // Deprecated
+      return match === elt.id;
+    }
+
+    var leaf = match[0];
+    if (leaf.id === elt.id) {
+      log("Matches", match, elt);
       return true;
     }
 
     return false;
   }
+
+  //function traverseMatchFromElement(match, top) {
+  //  var pathFromTop = match.slice();
+  //  pathFromTop.reverse();
+  //}
 
   function foreach(obj, fn) {
     for (var match in  obj) {
@@ -191,13 +235,6 @@
     });
   }
 
-  function queryParam(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-    var results = regex.exec(location.search);
-    return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
-  }
-
   function log(msg) {
     var args = Array.prototype.slice.call(arguments, 0);
     if (args.length) {
@@ -239,7 +276,6 @@
 
       document.body.appendChild(editorJs);
       document.body.appendChild(editorCss);
-
     }
   });
 
@@ -257,7 +293,8 @@
     endEditingElement: endEditingElement,
     resetElement: resetElement,
     clear: clear,
-    save: save
+    save: save,
+    queryParam: queryParam
   };
 
 })(window, document);

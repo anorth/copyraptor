@@ -21,7 +21,7 @@ function MainPanel(copyraptor) {
 
   var focusRect = new FocusRect();
 
-  var editable = true;
+  var editable = !!copyraptor.queryParam("e");
 
   editor = new Editor({
     onChange: function() {
