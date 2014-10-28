@@ -32,7 +32,7 @@ function EditorApp(injector, editable) {
   });
 
   me.elem = divc('main-panel', 
-      h1('Copyraptor', E('img', {src: "http://fc05.deviantart.net/fs51/i/2009/319/7/6/Raptor_Head_by_Hawt_Shot.png", width:40})),
+      h1('Copyraptor'),
       divc('controls', 
         checkBox('Editable', editable, function(isEditable) {
           editable = isEditable;

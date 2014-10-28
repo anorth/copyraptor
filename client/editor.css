@@ -18,7 +18,21 @@
 .copyraptor-app .main-panel h1 {
   font-weight: normal;
   font-size: 30px;
+  font-family: monospace;
   display: inline-block;
+  line-height: 40px;
+}
+.copyraptor-app .main-panel h1:before {
+  content: ' ';
+  display: block;
+  float: left;
+  margin-right: 20px;
+  background-image:
+    url('http://fc05.deviantart.net/fs51/i/2009/319/7/6/Raptor_Head_by_Hawt_Shot.png');
+  background-size: 40px 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
 }
 
 .copyraptor-app .main-panel .controls {
