@@ -4,74 +4,72 @@
   var blobHost = 'https://devstore.copyraptor.com.s3.amazonaws.com';
 
   var sitekey;
-  var changes = {}; // Overwritten by initialContent
+  var injectedContent = emptyContent(); // Overwritten by initialContent
+  var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
   var domContentHasLoaded = false;
   var initialChangesApplied = false;
 
-  // Exported functions
+  ///// Exported functions /////
+
   function initialContent(content) {
     log("Initialising content", content);
-    changes = content;
+    injectedContent = content;
   }
 
-  function rememberElement(elt) {
-    var match = matcherForElt(elt);
-    if (!!match && !originalContent[match]) {
-      var content = extractContentSpec(elt);
-      log("Remembering " + match, content);
-      originalContent[match] = content;
+  function beginEditingElement(elt) {
+    var key = elt.copyraptorkey = elt.copyraptorkey || nextEditKey++;
+    if (originalContent[key] === undefined) {
+      var content = extractContent(elt);
+      log("Remembering " + key, content);
+      originalContent[key] = content;
     }
   }
 
-  function specsAreEquivalent(a, b) {
-    return a !== undefined && b !== undefined && a.text === b.text;
-  }
-
-  function putElement(elt) {
-    var content = extractContentSpec(elt);
-    var match = matcherForElt(elt);
-    if (!!match) {
-      if (specsAreEquivalent(content, originalContent[match])) {
-        log("Element " + match + " is in original state");
-        changes[match] = undefined;
+  function endEditingElement(elt) {
+    var key = elt.copyraptorkey;
+    if (key !== undefined) {
+      var content = extractContent(elt);
+      var match = matcherForElt(elt);
+      if (contentAreEquivalent(content, originalContent[key])) {
+        log("Element for " + key + " is in original state");
+        injectedContent.changes[key] = undefined;
       } else {
         log("Storing new spec for " + match, content);
-        changes[match] = content;
+        injectedContent.changes[key] = {match: match, content: content};
       }
     }
   }
 
   function resetElement(elt) {
-    var match = matcherForElt(elt);
-    if (!!match && !!originalContent[match]) {
-      log("Resetting " + match);
-      injectContent(elt, originalContent[match]);
-      changes[match] = undefined;
+    var key = elt.copyraptorkey;
+    if (key && originalContent[key] !== undefined) {
+      log("Resetting elt for " + key);
+      injectContent(elt, originalContent[key]);
+      injectedContent.changes[key] = undefined;
     }
   }
 
   function clear() {
     log("Clear");
-    foreach(originalContent, function(match, spec) {
-      var elt = findElement(match);
+    foreach(injectedContent.changes, function(key, spec) {
+      var elt = findElement(spec.match);
       if (!!elt) {
-        injectContent(elt, spec);
+        injectContent(elt, spec.content);
       } else {
-        log("Can't find elt for original content for " + match);
+        log("Can't find elt for original content for " + key + ", match " + spec.match);
       }
     });
-    changes = {};
+    injectedContent.changes = {};
   }
 
-  // Private functions
   function save(success, failure) {
-    if (changes === undefined) {
+    if (injectedContent === undefined) {
       log("Refusing to save undefined content");
       return;
     }
-    log("Saving", changes);
-    var content = JSON.stringify(changes);
+    log("Saving", injectedContent);
+    var content = JSON.stringify(injectedContent);
     var payload = "(function() {window.copyraptor.initialContent(" + content + ");})()";
 
     var xhr = new XMLHttpRequest();
@@ -88,6 +86,15 @@
     };
 
     xhr.send(payload);
+  }
+
+  ///// Private functions /////
+
+  function emptyContent() {
+    return {
+      api: 1,
+      changes: {} // indexed by key
+    }
   }
 
   function matcherForElt(elt) {
@@ -116,34 +123,38 @@
     }
   }
 
-  function extractContentSpec(elt) {
+  function extractContent(elt) {
     // TODO(alex): More sophisticated content
     return {text: elt.textContent};
   }
 
-  function injectContent(elt, spec) {
+  function contentAreEquivalent(a, b) {
+    return a !== undefined && b !== undefined && a.text === b.text;
+  }
+
+  function injectContent(elt, content) {
     //TODO(jeeva): other replace methods
-    if (spec.text) {
-      elt.textContent = spec.text;
+    if (content.text) {
+      elt.textContent = content.text;
     } else {
-      console.error("Unknown change type", spec);
+      console.error("Unknown content type", content);
     }
   }
 
   /** Applies changes if both they and the DOM have loaded. */
   function applyInitialChanges() {
     if (initialChangesApplied) { return; }
-    if (changes !== undefined && domContentHasLoaded) {
+    if (injectedContent !== undefined && domContentHasLoaded) {
       initialChangesApplied = true;
-      foreach(changes, function(match, spec) {
-        var elt = findElement(match);
+      foreach(injectedContent.changes, function(key, spec) {
+        var elt = findElement(spec.match);
         if (!elt) {
-          log("No elt (yet) for match", match, spec);
+          log("No elt (yet) for key " + key, spec);
           return;
         }
 
-        originalContent[match] = extractContentSpec(elt);
-        injectContent(elt, spec);
+        originalContent[key] = extractContent(elt);
+        injectContent(elt, spec.content);
       });
 
       watchDom();
@@ -161,10 +172,10 @@
         //  oldValue: mutation.oldValue
         //};
         for (var i in mutation.addedNodes) {
-          foreach(changes, function(match, spec) {
+          foreach(injectedContent.changes, function(key, spec) {
             var elt = mutation.addedNodes[i];
-            if (matches(elt, match)) {
-              injectContent(elt, spec);
+            if (matches(elt, spec.match)) {
+              injectContent(elt, spec.content);
             }
           });
         }
@@ -242,8 +253,8 @@
 
   window.copyraptor = {
     initialContent: initialContent,
-    rememberElement: rememberElement,
-    putElement: putElement,
+    beginEditingElement: beginEditingElement,
+    endEditingElement: endEditingElement,
     resetElement: resetElement,
     clear: clear,
     save: save

@@ -32,12 +32,12 @@ function MainPanel(copyraptor) {
     onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
-      copyraptor.rememberElement(elem);
+      copyraptor.beginEditingElement(elem);
     },
     onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
-      copyraptor.putElement(elem);
+      copyraptor.endEditingElement(elem);
     }
   });
 
