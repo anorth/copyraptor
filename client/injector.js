@@ -41,10 +41,10 @@
         log("Element for " + key + " is in original state");
         delete injectedContent.changes[key];
       } else {
-        log("Storing new spec", match, content);
+        log("Storing new spec for key " + key, match, content);
         injectedContent.changes[key] = {match: match, content: content};
         // Re-inject the content we've saved so as to make any inconsistency immediately visible.
-        injectContent(elt, content);
+        injectContent(elt, key, content);
       }
     }
   }
@@ -53,7 +53,7 @@
     var key = elt.copyraptorkey;
     if (key && originalContent[key] !== undefined) {
       log("Resetting elt for " + key);
-      injectContent(elt, originalContent[key]);
+      injectContent(elt, key, originalContent[key]);
       delete injectedContent.changes[key];
     }
   }
@@ -63,9 +63,9 @@
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
       if (!!elt) {
-        injectContent(elt, originalContent[key]);
+        injectContent(elt, key, originalContent[key]);
       } else {
-        log("Can't find elt for original content for " + key + ", match " + spec.match);
+        warn("Can't find elt for original content for " + key + ", match " + spec.match);
       }
     });
     injectedContent = emptyContent();
@@ -73,7 +73,7 @@
 
   function save(success, failure) {
     if (injectedContent === undefined) {
-      log("Refusing to save undefined content");
+      warn("Refusing to save undefined content");
       return;
     }
     log("Saving", injectedContent);
@@ -88,7 +88,7 @@
         log("Save succeeded");
         if (success !== undefined) success(this.responseText);
       } else {
-        log("Save failed", e);
+        warn("Save failed", e);
         if (failure !== undefined) failure(e);
       }
     };
@@ -180,8 +180,14 @@
     return a !== undefined && b !== undefined && a.text === b.text && a.html === b.html;
   }
 
-  function injectContent(elt, content) {
-    //TODO(jeeva): other replace methods
+  function injectContent(elt, key, content) {
+    if (elt.copyraptorkey === undefined) {
+      elt.copyraptorkey = key;
+    } else if (elt.copyraptorkey !== key) {
+      warn("Element already has attached key " + elt.copyraptorkey, elt);
+      elt.copyraptorkey = key;
+    }
+
     if (content.html) {
       elt.innerHTML = content.html;
     } else if (content.text) {
@@ -201,10 +207,9 @@
       if (elt) {
         log("Injecting content for key " + key, spec, elt);
         originalContent[key] = extractContent(elt);
-        injectContent(elt, spec.content);
+        injectContent(elt, key, spec.content);
       } else {
         log("No elt (yet) for key " + key, spec);
-        return;
       }
     });
 
@@ -249,7 +254,7 @@
         foreach(injectedContent.changes, function(key, spec) {
           var elt = findElement(spec.match);
           if (!!addedNodeSet[elt]) {
-            injectContent(elt, spec.content);
+            injectContent(elt, key, spec.content);
           }
         });
       });
@@ -269,12 +274,18 @@
     }
   }
 
-  function log(msg) {
-    var args = Array.prototype.slice.call(arguments, 0);
-    if (args.length) {
-      args[0] = "[Copyraptor] " + args[0];
+  function log() {
+    console.log.apply(console, logargs(arguments));
+  }
+  function warn(msg) {
+    console.warn.apply(console, logargs(arguments));
+  }
+  function logargs(args) {
+    var newArgs = Array.prototype.slice.call(args, 0);
+    if (newArgs.length) {
+      newArgs[0] = "[Copyraptor] " + newArgs[0];
     }
-    console.log.apply(console, args);
+    return newArgs;
   }
 
   // Hook into document
