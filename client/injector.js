@@ -42,6 +42,8 @@
       } else {
         log("Storing new spec", match, content);
         injectedContent.changes[key] = {match: match, content: content};
+        // Re-inject the content we've saved so as to make any inconsistency immediately visible.
+        injectContent(elt, content);
       }
     }
   }
@@ -60,7 +62,7 @@
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
       if (!!elt) {
-        injectContent(elt, spec.content);
+        injectContent(elt, originalContent[key]);
       } else {
         log("Can't find elt for original content for " + key + ", match " + spec.match);
       }
@@ -118,16 +120,11 @@
         if (sib.children /* Elements only */ !== undefined) { siblingIndex++; }
       }
 
-      var klass = ancestor.className;
-      if (!!klass) {
-        klass = klass.split(" ");
-        klass.sort();
-      }
       path.push({
         "name": ancestor.nodeName,
         "index": siblingIndex,
-        "id": ancestor.id,
-        "class": klass
+        "id": ancestor.id || undefined,
+        "class": normalizeClass(ancestor.className)
       });
       // TODO(alex): include signature of existing content
 
@@ -153,6 +150,8 @@
       if (el.children.length <= matchPart.index) { log("Index OOB", matchPart, el); el = null; break; }
       var child = el.children[matchPart.index];
       if (child.nodeName !== matchPart.name) { log("Mismatched name", matchPart, child); el = null; break; }
+      if (!!matchPart.id && child.id !== matchPart.id) { log("Mismatched id", matchPart, child); el = null; break; }
+      if (!!matchPart.class && normalizeClass(child.className) !== matchPart.class) { log("Mismatched id", matchPart, child); el = null; break; }
       el = child;
     }
     return el;
@@ -168,6 +167,7 @@
 
   function extractContent(elt) {
     // TODO(alex): More sophisticated content
+    // TODO(alex): Strip meaningless whitespace from extracted content.
     return {text: elt.textContent};
   }
 
@@ -206,6 +206,7 @@
 
   function watchDom() {
     // TODO(jeeva): Fall back to more widely supported mutation events
+    // TODO(alex): Suspend observers while copyraptor is making DOM modifications
     var observer = new MutationObserver(function(mutations) {
       log("Mutation");
       mutations.forEach(function(mutation) {
@@ -243,6 +244,16 @@
         characterDataOldValue: true,
         subtree: true
     });
+  }
+
+  function normalizeClass(className) {
+    if (!!className) {
+      var parts = className.split(" ");
+      parts.sort();
+      return parts.join(" ");
+    } else {
+      return undefined;
+    }
   }
 
   function log(msg) {
