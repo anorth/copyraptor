@@ -1,3 +1,12 @@
+var CLIENT_SRC = exports.CLIENT_SRC = __dirname + '/../client/';
+var CLIENT_FILES = exports.CLIENT_FILES = [
+    'util.js',
+    'focus-rect.js',
+    'editor.js',
+    'app.js',
+    'injector.js'
+  ];
+
 var fs = require('fs');
 
 // Not called on server side, converted to string for client side.
@@ -33,15 +42,20 @@ var INIT_MODULE = 'window.copyraptor = {};';
 /**
  * Returns all js processed and bundled into one string.
  */
-function bundleJs(dir) {
-  return INIT_MODULE + buildBundle(dir, 'js', processJs);
+function bundleJs() {
+  var dir = CLIENT_SRC;
+  var files = CLIENT_FILES;
+  return INIT_MODULE + buildBundle(dir, files, processJs);
 }
 
 /**
  * Bootstrap js for dev mode, returning code that pulls in
  * all the unbundled but processed js files.
  */
-function bootstrapJs(dir, files) {
+function bootstrapJs() {
+  var dir = CLIENT_SRC;
+  var files = CLIENT_FILES;
+
   var result = INIT_MODULE + '\n';
   for (var i = 0; i < files.length; i++) {
     var f = files[i];
@@ -60,23 +74,23 @@ function bootstrapJs(dir, files) {
 /**
  * Bundles all css files together.
  */
-function buildCss(dir) {
-  return buildBundle(dir, 'css', function(name, content) {
-    return '\n\n// === ' + name + ' ===\n\n' + content;
+function buildCss() {
+  var dir = CLIENT_SRC;
+  var files = ['copyraptor.css'];
+
+  return buildBundle(dir, files, function(content) {
+    return content;
   });
 }
 
 /**
  * Bundles & processes files of a type inside a dir
  */
-function buildBundle(dir, ext, process) {
-  var files = fs.readdirSync(dir);
+function buildBundle(dir, files, process) {
   var result = '';
   for (var i = 0; i < files.length; i++) {
     var f = files[i];
-    if (!f.match(new RegExp('[.]' + ext + '$'))) continue;
-
-    result += process(f, fs.readFileSync(dir + '/' + f));
+    result += process(fs.readFileSync(dir + '/' + f));
   }
 
   return result;

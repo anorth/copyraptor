@@ -277,7 +277,7 @@
     // TODO(alex): Fallback to site from domain name
     sitekey = tag.getAttribute("data-copyraptor-site");
     if (sitekey !== undefined) {
-      scriptPath = tag.src.split("copyraptor.js")[0];
+      scriptPath = tag.src.split(/[\w_-]+.js/)[0];
       break;
     }
   }
