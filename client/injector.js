@@ -267,6 +267,8 @@
   // Hook into document
   var showEditor = !!queryParam("copyraptor");
 
+  var scriptPath;
+
   // Find the script element that loaded this script to extract the site id
   var tags = document.head.querySelectorAll("script");
   for (var i = 0; i < tags.length; ++i) {
@@ -275,6 +277,7 @@
     // TODO(alex): Fallback to site from domain name
     sitekey = tag.getAttribute("data-copyraptor-site");
     if (sitekey !== undefined) {
+      scriptPath = tag.src.split("copyraptor.js")[0];
       break;
     }
   }
@@ -296,7 +299,7 @@
 
     if (showEditor) {
       document.body.appendChild(E('link', {
-        href: '/copyraptor.css',
+        href: scriptPath + 'copyraptor.css',
         rel: 'stylesheet',
         type: 'text/css'
       }));
