@@ -111,6 +111,7 @@
     var ancestor = eltToMatch;
     while (ancestor !== document.body && ancestor !== undefined) {
       var siblingIndex = 0, sib = ancestor;
+      // TODO(alex): Consider omitting [empty] text nodes from index
       while ((sib = sib.previousSibling) !== null) { siblingIndex++; }
 
       var klass = ancestor.className;
@@ -156,10 +157,16 @@
     return false;
   }
 
-  //function traverseMatchFromElement(match, top) {
-  //  var pathFromTop = match.slice();
-  //  pathFromTop.reverse();
-  //}
+  function traverseMatchFromElement(match, top) {
+    var pathFromTop = match.slice();
+    pathFromTop.reverse();
+    var el = document.body;
+    for (var matchPart in pathFromTop) {
+      var child = el.children[matchPart.index];
+      el = child;
+    }
+    return el;
+  }
 
   function foreach(obj, fn) {
     for (var key in obj) {
