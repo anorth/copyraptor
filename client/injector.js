@@ -9,7 +9,6 @@
   var injectedContent = emptyContent(); // Overwritten by initialContent
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
-  var domContentHasLoaded = false;
   var initialChangesApplied = false;
 
   ///// Exported functions /////
@@ -17,6 +16,10 @@
   function initialContent(content) {
     log("Initialising content", content);
     injectedContent = content;
+    for (var key in content.changes) {
+      if (parseInt(key) > nextEditKey) { nextEditKey = key }
+    }
+    log("Initial content received, next edit key: " + nextEditKey);
   }
 
   function beginEditingElement(elt) {
@@ -37,7 +40,7 @@
         log("Element for " + key + " is in original state");
         delete injectedContent.changes[key];
       } else {
-        log("Storing new spec for " + match, content);
+        log("Storing new spec", match, content);
         injectedContent.changes[key] = {match: match, content: content};
       }
     }
@@ -107,12 +110,13 @@
   }
 
   function matcherForElt(eltToMatch) {
-    var path = [];
+    var path = []; // Bottom up order
     var ancestor = eltToMatch;
     while (ancestor !== document.body && ancestor !== undefined) {
       var siblingIndex = 0, sib = ancestor;
-      // TODO(alex): Consider omitting [empty] text nodes from index
-      while ((sib = sib.previousSibling) !== null) { siblingIndex++; }
+      while ((sib = sib.previousSibling) !== null) {
+        if (sib.children /* Elements only */ !== undefined) { siblingIndex++; }
+      }
 
       var klass = ancestor.className;
       if (!!klass) {
@@ -133,36 +137,22 @@
   }
 
   function findElement(match) {
-    if (typeof match === 'string') { // Deprecated
-      return document.getElementById(match);
-    }
-
-    var leaf = match[0];
-    if (!!leaf.id) {
-      return document.getElementById(leaf.id);
-    }
+    var found = traverseMatchFromTop(match, document.body);
+    // TODO(alex): Fall back to heuristics based on match path properties if not found.
+    return found;
   }
 
-  function matches(elt, match) {
-    if (typeof match === 'string') { // Deprecated
-      return match === elt.id;
-    }
-
-    var leaf = match[0];
-    if (leaf.id === elt.id) {
-      log("Matches", match, elt);
-      return true;
-    }
-
-    return false;
-  }
-
-  function traverseMatchFromElement(match, top) {
+  // Traces a match from a top node, seeking matching leaf.
+  // Returns an element, or null.
+  function traverseMatchFromTop(match, top) {
     var pathFromTop = match.slice();
     pathFromTop.reverse();
-    var el = document.body;
-    for (var matchPart in pathFromTop) {
+    var el = top, matchPart;
+    for (var level in pathFromTop) {
+      matchPart = pathFromTop[level];
+      if (el.children.length <= matchPart.index) { log("Index OOB", matchPart, el); el = null; break; }
       var child = el.children[matchPart.index];
+      if (child.nodeName !== matchPart.name) { log("Mismatched name", matchPart, child); el = null; break; }
       el = child;
     }
     return el;
@@ -196,25 +186,26 @@
 
   /** Applies changes if both they and the DOM have loaded. */
   function applyInitialChanges() {
-    if (initialChangesApplied) { return; }
-    if (injectedContent !== undefined && domContentHasLoaded) {
-      initialChangesApplied = true;
-      foreach(injectedContent.changes, function(key, spec) {
-        var elt = findElement(spec.match);
-        if (!elt) {
-          log("No elt (yet) for key " + key, spec);
-          return;
-        }
-
+    if (initialChangesApplied || injectedContent == undefined) { return; }
+    log("Applying initial changes");
+    initialChangesApplied = true;
+    foreach(injectedContent.changes, function(key, spec) {
+      var elt = findElement(spec.match);
+      if (elt) {
+        log("Injecting content for key " + key, spec, elt);
         originalContent[key] = extractContent(elt);
         injectContent(elt, spec.content);
-      });
+      } else {
+        log("No elt (yet) for key " + key, spec);
+        return;
+      }
+    });
 
-      watchDom();
-    }
+    watchDom();
   }
 
   function watchDom() {
+    // TODO(jeeva): Fall back to more widely supported mutation events
     var observer = new MutationObserver(function(mutations) {
       log("Mutation");
       mutations.forEach(function(mutation) {
@@ -224,14 +215,24 @@
         //  value: mutation.target.textContent,
         //  oldValue: mutation.oldValue
         //};
+        var addedNodeSet = {};
+        var anyAddedNodes = false;
         for (var i in mutation.addedNodes) {
-          foreach(injectedContent.changes, function(key, spec) {
-            var elt = mutation.addedNodes[i];
-            if (matches(elt, spec.match)) {
-              injectContent(elt, spec.content);
-            }
-          });
+          addedNodeSet[mutation.addedNodes[i]] = 1;
+          anyAddedNodes = true;
         }
+        if (!anyAddedNodes) { return }
+
+        // Re-evaluate each injected change and see if target element is an added element.
+        // Potentially more efficient ideas:
+        // - Early failure of traversal based on path to candidate element
+        // - Traverse injections in parallel to build set of matching elts
+        foreach(injectedContent.changes, function(key, spec) {
+          var elt = findElement(spec.match);
+          if (!!addedNodeSet[elt]) {
+            injectContent(elt, spec.content);
+          }
+        });
       });
     });
 
@@ -280,7 +281,6 @@
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
-    domContentHasLoaded = true;
     applyInitialChanges();
 
     if (showEditor) {
