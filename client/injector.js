@@ -16,8 +16,9 @@
   function initialContent(content) {
     log("Initialising content", content);
     injectedContent = content;
-    for (var key in content.changes) {
-      if (parseInt(key) > nextEditKey) { nextEditKey = key }
+    for (var keyString in content.changes) {
+      var k = parseInt(keyString);
+      if (k >= nextEditKey) { nextEditKey = k+1 }
     }
     log("Initial content received, next edit key: " + nextEditKey);
   }
@@ -168,16 +169,22 @@
   function extractContent(elt) {
     // TODO(alex): More sophisticated content
     // TODO(alex): Strip meaningless whitespace from extracted content.
-    return {text: elt.textContent};
+    if (elt.children.length == 0) {
+      return { text: elt.textContent };
+    } else {
+      return { html: elt.innerHTML };
+    }
   }
 
   function contentAreEquivalent(a, b) {
-    return a !== undefined && b !== undefined && a.text === b.text;
+    return a !== undefined && b !== undefined && a.text === b.text && a.html === b.html;
   }
 
   function injectContent(elt, content) {
     //TODO(jeeva): other replace methods
-    if (content.text) {
+    if (content.html) {
+      elt.innerHTML = content.html;
+    } else if (content.text) {
       elt.textContent = content.text;
     } else {
       console.error("Unknown content type", content);
@@ -205,10 +212,21 @@
   }
 
   function watchDom() {
+    var observer;
+    function observe() {
+      observer.observe(document.body, {
+        attributes: true,
+        childList: true,
+        characterData: true,
+        characterDataOldValue: true,
+        subtree: true
+      });
+    }
+
     // TODO(jeeva): Fall back to more widely supported mutation events
-    // TODO(alex): Suspend observers while copyraptor is making DOM modifications
-    var observer = new MutationObserver(function(mutations) {
-      log("Mutation");
+    observer = new MutationObserver(function(mutations) {
+      log("Mutations", mutations);
+      observer.disconnect();
       mutations.forEach(function(mutation) {
         //var entry = {
         //  mutation: mutation,
@@ -235,15 +253,10 @@
           }
         });
       });
+      observe();
     });
 
-    observer.observe(document.body, {
-        attributes: true,
-        childList: true,
-        characterData: true,
-        characterDataOldValue: true,
-        subtree: true
-    });
+    observe();
   }
 
   function normalizeClass(className) {
