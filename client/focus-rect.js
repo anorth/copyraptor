@@ -4,10 +4,8 @@ copyraptor.FocusRect = FocusRect;
 function FocusRect() {
   var me = this;
 
-  var thickness = me.thickness = 24;
+  var thickness = me.thickness = 12;
   var offset = me.offset = 0;
-
-  var color = rgba(0, 0, 0, 0.5);
 
   me.elem = divc('focus-rect',
       absolute({

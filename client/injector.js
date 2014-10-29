@@ -225,7 +225,7 @@
 
     // TODO(jeeva): Fall back to more widely supported mutation events
     observer = new MutationObserver(function(mutations) {
-      log("Mutations", mutations);
+      //log("Mutations", mutations);
       observer.disconnect();
       mutations.forEach(function(mutation) {
         //var entry = {
