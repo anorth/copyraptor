@@ -43,10 +43,11 @@
 .copyraptor-app .focus-rect-segment {
   overflow: hidden;
   position: absolute;
-  opacity: 0.33;
+  opacity: 0.6;
+  z-index: 9999999; /* Under copyraptor-app */
 }
 .copyraptor-app .editing .focus-rect-segment {
-  opacity: 0.66;
+  opacity: 1;
 }
 
 .copyraptor-app .focus-rect-segment:after {
