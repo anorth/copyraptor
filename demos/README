@@ -1,0 +1,3 @@
+Deveserver:  ./rundev.sh
+
+Build: ./build.sh
