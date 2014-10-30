@@ -1,7 +1,5 @@
+with (require('./util')) {
   'use strict';
-
-  module.import(copyraptor.util);
-  var EditorApp = copyraptor.EditorApp;
 
   var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
@@ -16,8 +14,9 @@
   function initialContent(content) {
     log("Initialising content", content);
     injectedContent = content;
-    for (var key in content.changes) {
-      if (parseInt(key) > nextEditKey) { nextEditKey = key }
+    for (var keyString in content.changes) {
+      var k = parseInt(keyString);
+      if (k >= nextEditKey) { nextEditKey = k+1 }
     }
     log("Initial content received, next edit key: " + nextEditKey);
   }
@@ -40,10 +39,10 @@
         log("Element for " + key + " is in original state");
         delete injectedContent.changes[key];
       } else {
-        log("Storing new spec", match, content);
+        log("Storing new spec for key " + key, match, content);
         injectedContent.changes[key] = {match: match, content: content};
         // Re-inject the content we've saved so as to make any inconsistency immediately visible.
-        injectContent(elt, content);
+        injectContent(elt, key, content);
       }
     }
   }
@@ -52,7 +51,7 @@
     var key = elt.copyraptorkey;
     if (key && originalContent[key] !== undefined) {
       log("Resetting elt for " + key);
-      injectContent(elt, originalContent[key]);
+      injectContent(elt, key, originalContent[key]);
       delete injectedContent.changes[key];
     }
   }
@@ -62,9 +61,9 @@
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
       if (!!elt) {
-        injectContent(elt, originalContent[key]);
+        injectContent(elt, key, originalContent[key]);
       } else {
-        log("Can't find elt for original content for " + key + ", match " + spec.match);
+        warn("Can't find elt for original content for " + key + ", match " + spec.match);
       }
     });
     injectedContent = emptyContent();
@@ -143,16 +142,28 @@
   function extractContent(elt) {
     // TODO(alex): More sophisticated content
     // TODO(alex): Strip meaningless whitespace from extracted content.
-    return {text: elt.textContent};
+    if (elt.children.length == 0) {
+      return { text: elt.textContent };
+    } else {
+      return { html: elt.innerHTML };
+    }
   }
 
   function contentAreEquivalent(a, b) {
-    return a !== undefined && b !== undefined && a.text === b.text;
+    return a !== undefined && b !== undefined && a.text === b.text && a.html === b.html;
   }
 
-  function injectContent(elt, content) {
-    //TODO(jeeva): other replace methods
-    if (content.text) {
+  function injectContent(elt, key, content) {
+    if (elt.copyraptorkey === undefined) {
+      elt.copyraptorkey = key;
+    } else if (elt.copyraptorkey !== key) {
+      warn("Element already has attached key " + elt.copyraptorkey, elt);
+      elt.copyraptorkey = key;
+    }
+
+    if (content.html) {
+      elt.innerHTML = content.html;
+    } else if (content.text) {
       elt.textContent = content.text;
     } else {
       console.error("Unknown content type", content);
@@ -169,10 +180,9 @@
       if (elt) {
         log("Injecting content for key " + key, spec, elt);
         originalContent[key] = extractContent(elt);
-        injectContent(elt, spec.content);
+        injectContent(elt, key, spec.content);
       } else {
         log("No elt (yet) for key " + key, spec);
-        return;
       }
     });
 
@@ -180,10 +190,21 @@
   }
 
   function watchDom() {
+    var observer;
+    function observe() {
+      observer.observe(document.body, {
+        attributes: true,
+        childList: true,
+        characterData: true,
+        characterDataOldValue: true,
+        subtree: true
+      });
+    }
+
     // TODO(jeeva): Fall back to more widely supported mutation events
-    // TODO(alex): Suspend observers while copyraptor is making DOM modifications
-    var observer = new MutationObserver(function(mutations) {
-      log("Mutation");
+    observer = new MutationObserver(function(mutations) {
+      //log("Mutations", mutations);
+      observer.disconnect();
       mutations.forEach(function(mutation) {
         //var entry = {
         //  mutation: mutation,
@@ -206,19 +227,14 @@
         foreach(injectedContent.changes, function(key, spec) {
           var elt = findElement(spec.match);
           if (!!addedNodeSet[elt]) {
-            injectContent(elt, spec.content);
+            injectContent(elt, key, spec.content);
           }
         });
       });
+      observe();
     });
 
-    observer.observe(document.body, {
-        attributes: true,
-        childList: true,
-        characterData: true,
-        characterDataOldValue: true,
-        subtree: true
-    });
+    observe();
   }
 
   function normalizeClass(className) {
@@ -231,12 +247,18 @@
     }
   }
 
-  function log(msg) {
-    var args = Array.prototype.slice.call(arguments, 0);
-    if (args.length) {
-      args[0] = "[Copyraptor] " + args[0];
+  function log() {
+    console.log.apply(console, logargs(arguments));
+  }
+  function warn(msg) {
+    console.warn.apply(console, logargs(arguments));
+  }
+  function logargs(args) {
+    var newArgs = Array.prototype.slice.call(args, 0);
+    if (newArgs.length) {
+      newArgs[0] = "[Copyraptor] " + newArgs[0];
     }
-    console.log.apply(console, args);
+    return newArgs;
   }
 
   // Hook into document
@@ -257,7 +279,7 @@
     }
   }
 
-  copyraptor.injector = {
+  var injector = module.exports = window.copyraptor = {
     initialContent: initialContent,
     beginEditingElement: beginEditingElement,
     endEditingElement: endEditingElement,
@@ -276,24 +298,21 @@
     }
   };
   
-  copyraptor.initialContent = initialContent;
+  
+  window.copyraptor.initialContent = initialContent;
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
 
     if (showEditor) {
-      //XXX: 
-      document.body.appendChild(E('link', {
-        href: scriptPath + 'copyraptor.css',
-        rel: 'stylesheet',
-        type: 'text/css'
-      }));
+      require.ensure(['./editor'], function(require) {
+        var EditorApp = require('./app');
 
-      var editing = !!queryParam("e");
-      //XXX: 
-      var editorApp = new EditorApp(copyraptor.injector, editing);
-      editorApp.show();
+        var editing = !!queryParam("e");
+        var editorApp = new EditorApp(injector, editing);
+        editorApp.show();
+      });
     }
   });
 
@@ -305,3 +324,4 @@
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
 
+}

@@ -1,8 +1,9 @@
 
-module.import(copyraptor.util);
+var util = require('./util');
 
-copyraptor.Editor = Editor;
-function Editor(listener) {
+util.loadCss(require('css!./copyraptor.css'));
+
+module.exports = function Editor(listener) {
   var me = this;
 
   var currentElem = null;
@@ -30,7 +31,7 @@ function Editor(listener) {
       currentElem.removeEventListener(type, handlers[type]);
     }
 
-    currentElem.contentEditable = false;
+    currentElem.contentEditable = 'inherit';
     listener.onDetached(currentElem);
 
     currentElem = null;

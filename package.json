@@ -2,6 +2,7 @@
   "name": "copyraptor",
   "version": "0.0.0",
   "main": "server/app.js",
+  "private": true,
   "dependencies": {
     "express": "^4.9.7",
     "q": "^1.0.1",
@@ -10,5 +11,9 @@
     "aws-sdk": "^2.0.23",
     "body-parser": "^1.9.2"
   },
-  "private": true
+  "devDependencies": {
+    "webpack": "1.4.9",
+    "jsdom": "1.0.3",
+    "jasmine-node": "1.14.5"
+  }
 }

@@ -1,6 +1,6 @@
-module.import(copyraptor.util);
+with(require('./util')) { (function() {
 
-var Q = copyraptor.Q;
+var Q = require('./q');
 
 function save(payload, sitekey) {
   return http("POST", 'http://localhost:3000/api/upload-url', {
@@ -29,13 +29,13 @@ function doAuth(username, password) {
   }))
 }
 
-copyraptor.EditorApp = EditorApp;
+var Editor = require('./editor');
+var FocusRect = require('./focus-rect');
+
+module.exports = EditorApp;
 function EditorApp(injector, editable) {
   assert(injector);
   editable = !!editable;
-
-  var Editor = copyraptor.Editor;
-  var FocusRect = copyraptor.FocusRect;
 
   var me = this;
 
@@ -216,3 +216,5 @@ function EditorApp(injector, editable) {
       );
   }
 }
+
+})(); }

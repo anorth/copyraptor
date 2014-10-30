@@ -1,42 +1,51 @@
+with(exports) {
 
-module.gradient = function(direction, col1, col2) {
+var assert = exports.assert = function(truth, msg) {
+  if (!truth) {
+    var info = Array.prototype.slice.call(arguments, 1);
+    throw new Error('Assertion failed' + (info.length > 0 ? ': ' + info.join(' ') : '!'));
+  }
+  return truth;
+};
+
+exports.gradient = function(direction, col1, col2) {
   return css({
     background: 'linear-gradient(to ' + direction + ', ' + col1 + ', ' + col2 + ')'
   });
-}
+};
 
 
-module.rgba = function(r, g, b, a) {
+exports.rgba = function(r, g, b, a) {
   return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
-}
+};
 
-module.css = function(props) {
+exports.css = function(props) {
   return {style: props};
-}
+};
 
-module.absolute = function(props) {
+exports.absolute = function(props) {
   props.position = 'absolute';
 
   return css(props);
-}
+};
 
-module.px = function(num) {
+exports.px = function(num) {
   return num + 'px';
-}
+};
 
 
-module.h1 = function() {
+exports.h1 = function() {
   return E('h1', args2array(arguments));
-}
-module.div = function() {
+};
+exports.div = function() {
   return E('div', args2array(arguments));
-}
-module.divc = function(klass /*, args */) {
+};
+exports.divc = function(klass /*, args */) {
   var args = args2array(arguments).slice(1); 
   return E('div', {className:klass}, args);
-}
+};
 
-module.checkBox = function(label, initial, listener) {
+exports.checkBox = function(label, initial, listener) {
   var chk;
 
   function onchange() {
@@ -44,13 +53,13 @@ module.checkBox = function(label, initial, listener) {
   }
   return E('span', chk = E('input', {
       type:'checkbox', checked:initial, onchange:onchange }), label);
-}
+};
 
-module.button = function(label, listener) {
+exports.button = function(label, listener) {
   return E('button', {onclick: listener}, label);
-}
+};
 
-module.E = function(tagName /*, props/children list intermingled */) {
+exports.E = function(tagName /*, props/children list intermingled */) {
   var elem = document.createElement(tagName);
 
   var args = args2array(arguments).slice(1); 
@@ -58,10 +67,10 @@ module.E = function(tagName /*, props/children list intermingled */) {
 
 
   return elem;
-}
+};
 
 
-module.copyElemProps = function(elem, props) {
+exports.copyElemProps = function(elem, props) {
   for (var k in props) {
     if (k === 'style') {
       var style = props[k];
@@ -72,9 +81,9 @@ module.copyElemProps = function(elem, props) {
       elem[k] = props[k];
     }
   }
-}
+};
 
-module.applyItems = function(elem, items) {
+exports.applyItems = function(elem, items) {
   for (var i = 0; i < items.length; i++) {
     var item = items[i];
     if (!item) {
@@ -102,23 +111,17 @@ module.applyItems = function(elem, items) {
 
     elem.appendChild(item);
   }
-}
+};
 
-module.isVanillaObj = function(x) {
+exports.isVanillaObj = function(x) {
   return typeof x === 'object' && x.constructor == Object;
-}
+};
 
-module.args2array = function(x) {
+exports.args2array = function(x) {
   return Array.prototype.slice.call(x);
-}
+};
 
-module.assert = function(truth, msg) {
-  if (!truth) {
-    throw new Error('Assertion failed' + (msg ? ': ' + msg : '!'));
-  }
-}
-
-module.isOrHasChild = function(elem, maybeChild) {
+exports.isOrHasChild = function(elem, maybeChild) {
   while (maybeChild) {
     if (maybeChild === elem) {
       return true;
@@ -128,26 +131,26 @@ module.isOrHasChild = function(elem, maybeChild) {
   }
 
   return false;
-}
+};
 
-module.addClass = function(elem, klass) {
+exports.addClass = function(elem, klass) {
   elem.className += ' ' + klass;
-}
-module.removeClass = function(elem, klass) {
+};
+exports.removeClass = function(elem, klass) {
   elem.className = elem.className.replace(new RegExp(' *' + klass + ' *'), ' ');
-}
+};
 
-module.isBlock = function(elem) {
+exports.isBlock = function(elem) {
   return computedStyle(elem).display === 'block';
-}
+};
 
-module.computedStyle = function(elem) {
+exports.computedStyle = function(elem) {
   return elem.currentStyle || window.getComputedStyle(elem, ""); 
-}
+};
 
-module.TRANSPARENT = rgba(0, 0, 0, 0);
+exports.TRANSPARENT = rgba(0, 0, 0, 0);
 
-module.http = function(method, url, config) {
+exports.http = function(method, url, config) {
   var Q = copyraptor.Q;
   var defer = Q.defer();
   config = config || {};
@@ -176,5 +179,8 @@ module.http = function(method, url, config) {
   };
 }
 
-copyraptor.util = module;
+exports.loadCss = function(module) {
+  document.head.appendChild(E('style', module.toString()));
+};
 
+}
