@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  var util = require('./util');
+  //var util = require('./util');
 
   var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
@@ -314,13 +314,13 @@
     save: save
   };
   
-  
-  window.copyraptor.initialContent = initialContent;
+  //window.copyraptor.initialContent = initialContent;
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
 
+    // TODO(alex): Do this on demand from user interaction
     if (showEditor) {
       require.ensure(['./editor'], function(require) {
         var EditorApp = require('./app');
