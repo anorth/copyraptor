@@ -264,7 +264,6 @@
 
   // Hook into document
   var showEditor = !!queryParam("copyraptor");
-
   var scriptPath;
 
   // Find the script element that loaded this script to extract the site id
@@ -278,6 +277,9 @@
       scriptPath = tag.src.split(/[\w_-]+.js/)[0];
       break;
     }
+  }
+  if (scriptPath) {
+    __webpack_require__.p = scriptPath;
   }
 
   var injector = module.exports = window.copyraptor = {
@@ -299,8 +301,6 @@
     }
   };
   
-  //window.copyraptor.initialContent = initialContent;
-
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
