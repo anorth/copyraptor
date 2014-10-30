@@ -1,5 +1,6 @@
-with (require('./util')) {
+(function() {
   'use strict';
+  var util = require('./util');
 
   var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
@@ -339,4 +340,4 @@ with (require('./util')) {
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
 
-}
+})();
