@@ -10,6 +10,8 @@ if [ -f ${CREDENTIALS_FILE} ]
 then
   echo "Loading credientials " ${CREDENTIALS_FILE}
   source ${CREDENTIALS_FILE}
+else
+  echo "Can't find" ${CREDENTIALS_FILE}
 fi
 
 aws s3 sync build ${CODE_BUCKET} --exclude "*.js.gz" --content-type "application/javascript"
