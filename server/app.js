@@ -40,6 +40,8 @@ function setCorsHeaders(req, res) {
   }
 }
 
+app.get('/', function(req, res) { res.send("Hello"); });
+
 app.options(/\/api\/.*/, requestHandler(function(req, res) {
   setCorsHeaders(req, res);
   res.send();
@@ -84,4 +86,5 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
   });
 }));
 
-app.listen(3000);
+console.log("Listening on " + process.env.PORT);
+app.listen(process.env.PORT);
