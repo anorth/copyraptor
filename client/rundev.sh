@@ -1,3 +1,3 @@
 #!/bin/bash
 
-webpack-dev-server --progress --devtool=source-map --colors --port 5544
+node_modules/webpack-dev-server/bin/webpack-dev-server.js --progress --devtool=source-map --colors --port 5544
