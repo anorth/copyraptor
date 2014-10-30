@@ -251,7 +251,7 @@
   function log() {
     console.log.apply(console, logargs(arguments));
   }
-  function warn(msg) {
+  function warn() {
     console.warn.apply(console, logargs(arguments));
   }
   function logargs(args) {

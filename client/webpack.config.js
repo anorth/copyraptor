@@ -5,6 +5,6 @@ module.exports = {
     filename: 'copyraptor.js',
     publicPath: 'http://localhost:5544/build/',
 
-    sourceMapFilename: '[file].map',
+    sourceMapFilename: '[file].map'
   }
 };
