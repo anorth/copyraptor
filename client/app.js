@@ -1,12 +1,12 @@
-module.import(copyraptor.util);
+with(require('./util')) { (function() {
 
-copyraptor.EditorApp = EditorApp;
+var Editor = require('./editor');
+var FocusRect = require('./focus-rect');
+
+module.exports = EditorApp;
 function EditorApp(injector, editable) {
   assert(injector);
   editable = !!editable;
-
-  var Editor = copyraptor.Editor;
-  var FocusRect = copyraptor.FocusRect;
 
   var me = this;
 
@@ -139,3 +139,5 @@ function EditorApp(injector, editable) {
       );
   }
 }
+
+})(); }

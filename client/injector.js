@@ -1,7 +1,5 @@
+with (require('./util')) {
   'use strict';
-
-  module.import(copyraptor.util);
-  var EditorApp = copyraptor.EditorApp;
 
   var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
@@ -306,7 +304,7 @@
     }
   }
 
-  copyraptor.injector = {
+  var injector = module.exports = window.copyraptor = {
     initialContent: initialContent,
     beginEditingElement: beginEditingElement,
     endEditingElement: endEditingElement,
@@ -315,22 +313,21 @@
     save: save
   };
   
-  copyraptor.initialContent = initialContent;
+  
+  window.copyraptor.initialContent = initialContent;
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
 
     if (showEditor) {
-      document.body.appendChild(E('link', {
-        href: scriptPath + 'copyraptor.css',
-        rel: 'stylesheet',
-        type: 'text/css'
-      }));
+      require.ensure(['./editor'], function(require) {
+        var EditorApp = require('./app');
 
-      var editing = !!queryParam("e");
-      var editorApp = new EditorApp(copyraptor.injector, editing);
-      editorApp.show();
+        var editing = !!queryParam("e");
+        var editorApp = new EditorApp(injector, editing);
+        editorApp.show();
+      });
     }
   });
 
@@ -342,3 +339,4 @@
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
 
+}

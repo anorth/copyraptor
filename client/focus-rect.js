@@ -1,6 +1,6 @@
-module.import(copyraptor.util);
+with(require('./util')) { (function() {
 
-copyraptor.FocusRect = FocusRect;
+module.exports = FocusRect;
 function FocusRect() {
   var me = this;
 
@@ -83,3 +83,5 @@ FocusRect.prototype.move = function(x, y, width, height) {
 
 };
 
+
+})(); }
