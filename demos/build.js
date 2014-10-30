@@ -1,10 +1,11 @@
 var CLIENT_SRC = exports.CLIENT_SRC = __dirname + '/../client/';
 var CLIENT_FILES = exports.CLIENT_FILES = [
     'util.js',
+    'q.js',
     'focus-rect.js',
     'editor.js',
     'app.js',
-    'injector.js'
+    'injector.js',
   ];
 
 var fs = require('fs');

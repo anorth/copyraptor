@@ -70,31 +70,6 @@
     injectedContent = emptyContent();
   }
 
-  function save(success, failure) {
-    if (injectedContent === undefined) {
-      log("Refusing to save undefined content");
-      return;
-    }
-    log("Saving", injectedContent);
-    var content = JSON.stringify(injectedContent);
-    var payload = "(function() {window.copyraptor.initialContent(" + content + ");})()";
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('PUT', blobHost + '/' + sitekey, true);
-    xhr.setRequestHeader('Content-Type', 'application/javascript');
-    xhr.onload = function (e) {
-      if (this.status == 200) {
-        log("Save succeeded");
-        if (success !== undefined) success(this.responseText);
-      } else {
-        log("Save failed", e);
-        if (failure !== undefined) failure(e);
-      }
-    };
-
-    xhr.send(payload);
-  }
-
   function queryParam(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
@@ -288,7 +263,17 @@
     endEditingElement: endEditingElement,
     resetElement: resetElement,
     clear: clear,
-    save: save
+
+    getPayload: function() {
+      if (injectedContent === undefined) {
+        throw new Exception("initialContent is undefined, should never be the case");
+      }
+      return "(function() {window.copyraptor.initialContent(" + JSON.stringify(injectedContent) + ");})()";
+    },
+
+    getSiteKey: function() {
+      return sitekey;
+    }
   };
   
   copyraptor.initialContent = initialContent;
@@ -298,6 +283,7 @@
     applyInitialChanges();
 
     if (showEditor) {
+      //XXX: 
       document.body.appendChild(E('link', {
         href: scriptPath + 'copyraptor.css',
         rel: 'stylesheet',
@@ -305,6 +291,7 @@
       }));
 
       var editing = !!queryParam("e");
+      //XXX: 
       var editorApp = new EditorApp(copyraptor.injector, editing);
       editorApp.show();
     }

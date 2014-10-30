@@ -1,0 +1,14 @@
+{
+  "name": "copyraptor",
+  "version": "0.0.0",
+  "main": "server/app.js",
+  "dependencies": {
+    "express": "^4.9.7",
+    "q": "^1.0.1",
+    "lodash": "^2.4.1",
+    "cookie-session": "^1.0.2",
+    "aws-sdk": "^2.0.23",
+    "body-parser": "^1.9.2"
+  },
+  "private": true
+}

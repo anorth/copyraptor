@@ -147,5 +147,34 @@ module.computedStyle = function(elem) {
 
 module.TRANSPARENT = rgba(0, 0, 0, 0);
 
+module.http = function(method, url, config) {
+  var Q = copyraptor.Q;
+  var defer = Q.defer();
+  config = config || {};
+
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, url, true);
+  if (config.headers) {
+    for (k in config.headers) {
+      xhr.setRequestHeader(k, config.headers[k]);
+    }
+  }
+  xhr.withCredentials = !!config.withCredentials;
+  xhr.onload = function (e) {
+    if (this.status == 200) {
+      defer.resolve(this);
+    } else {
+      defer.reject(this);
+    }
+  };
+
+  return {
+    send: function(payload) {
+      xhr.send(payload);
+      return defer.promise;
+    }
+  };
+}
+
 copyraptor.util = module;
 

@@ -1,5 +1,34 @@
 module.import(copyraptor.util);
 
+var Q = copyraptor.Q;
+
+function save(payload, sitekey) {
+  return http("POST", 'http://localhost:3000/api/upload-url', {
+      headers: {'Content-Type': 'application/json'},
+      withCredentials: true
+  })
+  .send(JSON.stringify({sitekey: sitekey}))
+  .then(function(resp) {
+    console.log("Saving", payload);
+    
+    var putUrl = JSON.parse(resp.responseText).putUrl;
+    return http("PUT", putUrl, {
+      headers: {'Content-Type': 'application/javascript'}
+    }).send(payload);
+  });
+}
+
+function doAuth(username, password) {
+  return http("POST", 'http://localhost:3000/api/login', {
+      headers: {'Content-Type': 'application/json'},
+      withCredentials: true
+  })
+  .send(JSON.stringify({
+    username: username,
+    password: password
+  }))
+}
+
 copyraptor.EditorApp = EditorApp;
 function EditorApp(injector, editable) {
   assert(injector);
@@ -11,7 +40,9 @@ function EditorApp(injector, editable) {
   var me = this;
 
   var focusRect = new FocusRect();
-
+  var unsavedChanges = E('span', {className: 'pending-changes'}, '(unsaved changes)');
+  function hasUnsavedChanges() { addClass(unsavedChanges, 'visible'); }
+  function noUnsavedChanges() { removeClass(unsavedChanges, 'visible'); }
 
   var editor = new Editor({
     onChange: function() {
@@ -22,14 +53,49 @@ function EditorApp(injector, editable) {
     onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
+      this.current = injector.getPayload();
       injector.beginEditingElement(elem);
     },
     onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
       injector.endEditingElement(elem);
+      if (this.current != injector.getPayload())
+        hasUnsavedChanges();
     }
   });
+
+  function loadingGif() {
+    return E('img', {className: 'loading-gif', src: 'assets/ajax-loader.gif'});
+  }
+
+  var login = divc('login-form',
+      E('p', 'Session expired, please login to save'),
+      E('form', {onsubmit: function() {
+        try {
+          var me = this;
+          addClass(login, 'loading');
+          doAuth(me.elements.user.value, me.elements.pass.value)
+            .then(function() {
+              removeClass(login, 'visible');
+            })
+            .catch(function() {
+              addClass(login, 'error');
+            })
+            .finally(function() {
+              removeClass(login, 'loading');
+            });
+        } catch(err) {
+          console.log(err);
+        }
+        return false;
+      }},
+        E('p', {'className': 'error'}, 'Invalid username or password'),
+        E('input', {type:'text', name: 'user', 'placeholder': 'username'}),
+        E('input', {type:'password', name: 'pass', 'placeholder': 'password'}),
+        E('button', 'login ', loadingGif())
+      )
+  );
 
   me.elem = divc('main-panel', 
       h1('Copyraptor'),
@@ -42,18 +108,29 @@ function EditorApp(injector, editable) {
           }
         })
       ),
-      button('Save', function() {
+      button(['Save ', 
+              loadingGif(),
+             ], function() {
         var me = this;
-        me.textContent = "Saving...";
-        injector.save(
-            function () {
-              me.textContent = "Save"
-            }, function (err) {
-              alert("Save failed: " + err);
-              me.textContent = "Save"
-            });
+        addClass(me, 'loading');
+
+        save(injector.getPayload(), injector.getSiteKey())
+          .then(function() {
+            noUnsavedChanges();
+          })
+          .catch(function(resp) {
+            if (resp.status == 401) { // unauthorised
+              addClass(login, 'visible');
+              return;
+            }
+            console.log(resp);
+          }).finally(function() {
+            removeClass(me, 'loading');
+          });
       }),
       button('Reset all', function() {injector.clear();}),
+      unsavedChanges,
+      login,
       focusRect
     );
 

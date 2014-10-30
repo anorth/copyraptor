@@ -1,6 +1,7 @@
 
 var express = require('express');
 var fs = require('fs');
+var path = require('path');
 
 var app = express();
 
@@ -13,6 +14,10 @@ app.use("/", express.static(__dirname));
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/test1.html');
+});
+
+app.get('/assets/:filename', function(req, res) {
+  res.sendFile(path.resolve(__dirname + '/../client/assets/' + req.params.filename));
 });
 
 app.get('/copyraptor-bundled.js', function(req, res) {
@@ -49,9 +54,6 @@ app.get('/copyraptor.css', function(req, res) {
   res.status(200);
   res.send(content);
 });
-
-
-
 
 var port = 5544;
 console.log('http://localhost:' + port + '/');

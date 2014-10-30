@@ -40,6 +40,14 @@
   margin-left: 30px;
 }
 
+.copyraptor-app .loading-gif {
+  display: none;
+}
+
+.copyraptor-app .loading .loading-gif {
+  display: inline-block;
+}
+
 .copyraptor-app .focus-rect-segment {
   overflow: hidden;
   position: absolute;
@@ -96,4 +104,54 @@
   right: 24px;
   background: linear-gradient(to bottom, black, rgba(0,0,0,0));
   transform: skew(63.43deg, 0deg);
+}
+
+.copyraptor-app button {
+  background-color: rgb(135, 135, 243);
+  color: white;
+  margin: 5px;
+  height: 30px;
+}
+
+.copyraptor-app .login-form {
+  padding: 5px 50px;
+  display: none;
+}
+
+.copyraptor-app .login-form.visible {
+  padding: 5px 50px;
+  display: block;
+}
+
+.copyraptor-app .login-form p {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.copyraptor-app .login-form p.error {
+  font-weight: bold;
+  color: rgb(248, 81, 81);
+  display: none
+}
+
+.copyraptor-app .login-form.error p.error {
+  display: block;
+}
+
+.copyraptor-app .login-form input {
+  width: 180px;
+  margin: 5px;
+  line-height: 20px;
+}
+
+.copyraptor-app .login-form button {
+  height: 45px;
+}
+
+.copyraptor-app .pending-changes {
+  display: none;
+}
+
+.copyraptor-app .pending-changes.visible {
+  display: inline;
 }
