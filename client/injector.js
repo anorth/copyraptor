@@ -1,5 +1,6 @@
-with (require('./util')) {
+(function() {
   'use strict';
+  //var util = require('./util');
 
   var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
 
@@ -298,13 +299,13 @@ with (require('./util')) {
     }
   };
   
-  
-  window.copyraptor.initialContent = initialContent;
+  //window.copyraptor.initialContent = initialContent;
 
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
 
+    // TODO(alex): Do this on demand from user interaction
     if (showEditor) {
       require.ensure(['./editor'], function(require) {
         var EditorApp = require('./app');
@@ -324,4 +325,4 @@ with (require('./util')) {
     document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
   }
 
-}
+})();
