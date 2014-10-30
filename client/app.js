@@ -1,14 +1,18 @@
 with(require('./util')) { (function() {
 
 var Q = require('./q');
+var API_SERVER = 'http://localhost:3000/api'
+var STATIC_SERVER = 'http://localhost:5544'
 
 function save(payload, sitekey) {
-  return http("POST", 'http://localhost:3000/api/upload-url', {
+  return http("POST", API_SERVER + '/upload-url', {
       headers: {'Content-Type': 'application/json'},
       withCredentials: true
   })
-  .send(JSON.stringify({sitekey: sitekey}))
-  .then(function(resp) {
+  .send(JSON.stringify({
+    sitekey: sitekey,
+    contentType: 'application/javascript',
+  })).then(function(resp) {
     console.log("Saving", payload);
     
     var putUrl = JSON.parse(resp.responseText).putUrl;
@@ -19,7 +23,7 @@ function save(payload, sitekey) {
 }
 
 function doAuth(username, password) {
-  return http("POST", 'http://localhost:3000/api/login', {
+  return http("POST", API_SERVER + '/login', {
       headers: {'Content-Type': 'application/json'},
       withCredentials: true
   })
@@ -66,7 +70,7 @@ function EditorApp(injector, editable) {
   });
 
   function loadingGif() {
-    return E('img', {className: 'loading-gif', src: 'assets/ajax-loader.gif'});
+    return E('img', {className: 'loading-gif', src: STATIC_SERVER + '/assets/ajax-loader.gif'});
   }
 
   var login = divc('login-form',
@@ -119,6 +123,7 @@ function EditorApp(injector, editable) {
             noUnsavedChanges();
           })
           .catch(function(resp) {
+            console.log(resp);
             if (resp.status == 401) { // unauthorised
               addClass(login, 'visible');
               return;

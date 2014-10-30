@@ -1,15 +1,15 @@
 module.exports = {
   AWS: {
-    KEY: 'asdfasdfasdf',
-    SECRET: 'asdfasdfasdf'
+    accessKeyId: 'AKIAILPXSCRCYGTMRQVQ',
+    secretAccessKey: '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',
+    region: 'ap-southeast-2',
+    bucket: 'devstore.copyraptor.com'
   },
 
-  USER: {
-    helix: { password: 'helix', bucket: 'devstore.copyraptor.com.s3.amazonaws.com' },
-    firstorder: { password: 'firstorder', bucket: 'devstore.copyraptor.com.s3.amazonaws.com' }
+  USERS: {
+    helix: { password: 'helix' },
+    firstorder: { password: 'firstorder' }
   },
-
-
 
   SECRET: '02930asjfo;aj0[129i30[kasdjfkasjdf0192asfd'
-};
+}

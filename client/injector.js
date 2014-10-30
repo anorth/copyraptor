@@ -2,7 +2,7 @@
   'use strict';
   //var util = require('./util');
 
-  var blobHost = 'http://devstore.copyraptor.com.s3.amazonaws.com';
+  var blobHost = 'http://jeeva.copyraptor.com.s3.amazonaws.com';
 
   var sitekey;
   var injectedContent = emptyContent(); // Overwritten by initialContent

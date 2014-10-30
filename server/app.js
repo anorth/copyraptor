@@ -4,6 +4,7 @@ var Q = require('q');
 var config = require('./config');
 var bodyParser = require('body-parser')
 var session = require('cookie-session')
+var AWS = require('aws-sdk'); 
 
 app.set('config', config);
 
@@ -67,22 +68,37 @@ app.post('/api/login', requestHandler(function(req, res) {
 
 
 app.post('/api/upload-url', requestHandler(function(req, res) {
-  return Q.resolve().then(function() {
-    setCorsHeaders(req, res);
+  setCorsHeaders(req, res);
+  // an existing site needs authentication
+  var siteUser = config.USERS[req.body.sitekey];
+  if (siteUser && !req.session.user) {
+    res.status(401).send();
+    return Q.resolve();
+  }
 
-    // TODO(jeeva): factor into a general auth decorator
-    if (!req.session.user) {
-      return res.sendStatus(401);
-    }
+  var s3 = new AWS.S3(config.AWS);
 
-    // Testing hack to reset sessions
-    //req.session = null;
-
-    var bucket = req.session.user.bucket;
-    var bucket = 'devstore.copyraptor.com.s3.amazonaws.com';
-
-    // TODO(jeeva): generate and send a signed URL
-    res.send({putUrl: 'http://' + bucket + '/' + req.body.sitekey});
+  return Q.ninvoke(s3, 'headObject', {
+     Bucket: config.AWS.bucket, 
+     Key: req.body.sitekey
+  }).catch(function() {
+    // object doesn't exist, create it
+    return Q.ninvoke(s3, 'putObject', {
+       Bucket: config.AWS.bucket, 
+       Key: req.body.sitekey,
+       ACL: 'public-read',
+       Body: 'function(){}()',
+    });
+  }).then(function() {
+    return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
+     Bucket: config.AWS.bucket, 
+     Key: req.body.sitekey,
+     Expires: 60 * 5, // 5 minutes,
+     ContentType: req.body.contentType,
+     ACL: 'public-read'
+    });
+  }).then(function(url) {
+    res.send({putUrl: url});
   });
 }));
 
