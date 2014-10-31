@@ -2,9 +2,6 @@
   'use strict';
   //var util = require('./util');
 
-  var blobHost = 'http://jeeva.copyraptor.com.s3.amazonaws.com';
-
-  var sitekey;
   var injectedContent = emptyContent(); // Overwritten by initialContent
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
@@ -262,27 +259,43 @@
     return newArgs;
   }
 
-  // Hook into document
-  var showEditor = !!queryParam("copyraptor");
-  var scriptPath;
+  var env = (function() {
+    var sitekey, scriptPath, blobHost;
 
-  // Find the script element that loaded this script to extract the site id
-  var tags = document.head.querySelectorAll("script");
-  for (var i = 0; i < tags.length; ++i) {
-    var tag = tags[i];
+    // Find the script element that loaded this script to extract the site id
+    var tags = document.head.querySelectorAll("script");
+    for (var i = 0; i < tags.length; ++i) {
+      var tag = tags[i];
 
-    // TODO(alex): Fallback to site from domain name
-    sitekey = tag.getAttribute("data-copyraptor-site");
-    if (sitekey !== undefined) {
-      scriptPath = tag.src.split(/[\w_-]+.js/)[0];
-      break;
+      // TODO(alex): Fallback to site from domain name
+      sitekey = tag.getAttribute("data-copyraptor-site");
+      if (sitekey !== undefined) {
+        scriptPath = tag.src.split(/[\w_-]+.js/)[0];
+        break;
+      }
     }
-  }
-  if (scriptPath) {
-    __webpack_require__.p = scriptPath;
-  }
+
+    if (scriptPath) {
+      var m = scriptPath.match(new RegExp("(http(s)?://)([\\w:.]+)/.*"));
+      var scheme = m[1];
+      var host = m[3];
+      blobHost = (host.slice(0, 9) === 'localhost') ? 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com' : 'content.copyraptor.com';
+
+      __webpack_require__.p = scriptPath;
+    }
+
+    return {
+      siteKey: function() { return sitekey; },
+      scriptPath: function() { return scriptPath; },
+      blobHost: function() { return blobHost; },
+      contentSrc: function() { return scheme + blobHost + '/' + sitekey; }
+    };
+  })();
+
+  // Hook into document
 
   var injector = module.exports = window.copyraptor = {
+    env: env,
     initialContent: initialContent,
     beginEditingElement: beginEditingElement,
     endEditingElement: endEditingElement,
@@ -294,10 +307,6 @@
         throw new Exception("initialContent is undefined, should never be the case");
       }
       return "(function() {window.copyraptor.initialContent(" + JSON.stringify(injectedContent) + ");})()";
-    },
-
-    getSiteKey: function() {
-      return sitekey;
     }
   };
   
@@ -306,6 +315,7 @@
     applyInitialChanges();
 
     // TODO(alex): Do this on demand from user interaction
+    var showEditor = !!queryParam("copyraptor");
     if (showEditor) {
       require.ensure(['./editor'], function(require) {
         var EditorApp = require('./app');
@@ -317,12 +327,9 @@
     }
   });
 
-
   // Insert a script element after this to load the content synchronously
-  if (sitekey != undefined) {
+  if (env.siteKey() !== undefined) {
     // NOTE(alex): appendChild-style DOM manipulation does not execute the script synchronously.
-    var contentSrc = blobHost + "/" + sitekey;
-    document.write('<script type="text/javascript" src="' + contentSrc + '"></script>');
+    document.write('<script type="text/javascript" src="' + env.contentSrc() + '"></script>');
   }
-
 })();

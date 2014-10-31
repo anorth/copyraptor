@@ -2,8 +2,8 @@ var express = require('express');
 var app = express();
 var Q = require('q');
 var config = require('./config');
-var bodyParser = require('body-parser')
-var session = require('cookie-session')
+var bodyParser = require('body-parser');
+var session = require('cookie-session');
 var AWS = require('aws-sdk'); 
 
 app.set('config', config);
@@ -70,34 +70,42 @@ app.post('/api/login', requestHandler(function(req, res) {
 app.post('/api/upload-url', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
   // an existing site needs authentication
-  var siteUser = config.USERS[req.body.sitekey];
+  var siteKey = req.body.sitekey;
+  var siteUser = config.USERS[siteKey];
   if (siteUser && !req.session.user) {
     res.status(401).send();
     return Q.resolve();
   }
 
-  var s3 = new AWS.S3(config.AWS);
+  var s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: config.AWS.region,
+    bucket: config.AWS.bucket
+  });
 
   return Q.ninvoke(s3, 'headObject', {
      Bucket: config.AWS.bucket, 
-     Key: req.body.sitekey
+     Key: siteKey
   }).catch(function() {
     // object doesn't exist, create it
+    console.log("No object for " + siteKey + ", creating it.");
     return Q.ninvoke(s3, 'putObject', {
        Bucket: config.AWS.bucket, 
-       Key: req.body.sitekey,
+       Key: siteKey,
        ACL: 'public-read',
-       Body: 'function(){}()',
+       Body: '(function(){})()'
     });
   }).then(function() {
     return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
      Bucket: config.AWS.bucket, 
-     Key: req.body.sitekey,
+     Key: siteKey,
      Expires: 60 * 5, // 5 minutes,
      ContentType: req.body.contentType,
      ACL: 'public-read'
     });
   }).then(function(url) {
+    console.log(siteKey + " -> " + url);
     res.send({putUrl: url});
   });
 }));

@@ -6,4 +6,5 @@ node_modules/
 .DS_Store
 
 server/config.js
-aws-credentials.sh
+admin-credentials.sh
+app-credentials.sh

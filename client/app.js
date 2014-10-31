@@ -1,8 +1,8 @@
 with(require('./util')) { (function() {
 
 var Q = require('./q');
-var API_SERVER = 'http://localhost:3000/api'
-var STATIC_SERVER = 'http://localhost:5544'
+var API_SERVER = 'http://localhost:3000/api';
+var STATIC_SERVER = 'http://localhost:5544';
 
 function save(payload, sitekey) {
   return http("POST", API_SERVER + '/upload-url', {
@@ -11,7 +11,7 @@ function save(payload, sitekey) {
   })
   .send(JSON.stringify({
     sitekey: sitekey,
-    contentType: 'application/javascript',
+    contentType: 'application/javascript'
   })).then(function(resp) {
     console.log("Saving", payload);
     
@@ -113,12 +113,12 @@ function EditorApp(injector, editable) {
         })
       ),
       button(['Save ', 
-              loadingGif(),
+              loadingGif()
              ], function() {
         var me = this;
         addClass(me, 'loading');
 
-        save(injector.getPayload(), injector.getSiteKey())
+        save(injector.getPayload(), injector.env.siteKey())
           .then(function() {
             noUnsavedChanges();
           })
