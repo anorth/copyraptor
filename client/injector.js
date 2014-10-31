@@ -277,13 +277,13 @@
 
     if (staticPath) {
       var m = staticPath.match(new RegExp("(http(s)?://)([\\w:.]+).*"));
-      var scheme = m[1];
+      var scheme = m[1] === 'https://' ? 'https://' : 'http';
       var host = m[3];
       if (host.slice(0, 9) === 'localhost') {
         serverPath = 'http://localhost:3000';
         blobHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
       } else {
-        serverPath = 'http://copyraptor.com';
+        serverPath = scheme + 'www.copyraptor.com';
         blobHost = 'content.copyraptor.com';
       }
 
