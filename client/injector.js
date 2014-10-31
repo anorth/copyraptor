@@ -277,7 +277,7 @@
 
     if (staticPath) {
       var m = staticPath.match(new RegExp("(http(s)?://)([\\w:.]+).*"));
-      var scheme = m[1] === 'https://' ? 'https://' : 'http';
+      var scheme = m[1];
       var host = m[3];
       if (host.slice(0, 9) === 'localhost') {
         serverPath = 'http://localhost:3000';

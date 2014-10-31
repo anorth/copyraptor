@@ -17,5 +17,6 @@ fi
 
 aws s3 sync build ${CODE_BUCKET} --exclude "*.js.gz" --content-type "application/javascript" --cache-control "${CACHE_CONTROL}"
 aws s3 sync build ${CODE_BUCKET} --exclude "*" --include "*.js.gz" --content-type "application/javascript"  --cache-control "${CACHE_CONTROL}" --content-encoding="gzip"
+aws s3 sync assets ${CODE_BUCKET}/assets
 
 echo "Done"
