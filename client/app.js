@@ -1,4 +1,7 @@
-with(require('./util')) { (function() {
+var util = require('./apputil');
+
+// TODO(dan): Kill this with() block.
+with(util) { (function() {
 
 var Q = require('q');
 var API_SERVER = 'http://localhost:3000/api';

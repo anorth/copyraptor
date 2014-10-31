@@ -1,5 +1,5 @@
 
-var util = require('./util');
+var util = require('./apputil');
 
 util.loadCss(require('css!./copyraptor.css'));
 

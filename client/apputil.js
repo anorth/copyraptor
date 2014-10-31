@@ -1,12 +1,15 @@
-with(exports) {
+/* 
+ * Utils to be loaded within app only.
+ * Re-exports ./common, so no need to use both.
+ */
 
-var assert = exports.assert = function(truth, msg) {
-  if (!truth) {
-    var info = Array.prototype.slice.call(arguments, 1);
-    throw new Error('Assertion failed' + (info.length > 0 ? ': ' + info.join(' ') : '!'));
-  }
-  return truth;
-};
+// Re-export common
+common = require('./common');
+for (var k in common) {
+  exports[k] = common[k];
+}
+with(exports) { (function() {
+
 
 exports.gradient = function(direction, col1, col2) {
   return css({
@@ -113,33 +116,6 @@ exports.applyItems = function(elem, items) {
   }
 };
 
-exports.isVanillaObj = function(x) {
-  return typeof x === 'object' && x.constructor == Object;
-};
-
-exports.args2array = function(x) {
-  return Array.prototype.slice.call(x);
-};
-
-exports.isOrHasChild = function(elem, maybeChild) {
-  while (maybeChild) {
-    if (maybeChild === elem) {
-      return true;
-    }
-
-    maybeChild = maybeChild.parentNode;
-  }
-
-  return false;
-};
-
-exports.addClass = function(elem, klass) {
-  elem.className += ' ' + klass;
-};
-exports.removeClass = function(elem, klass) {
-  elem.className = elem.className.replace(new RegExp(' *' + klass + ' *'), ' ');
-};
-
 exports.isBlock = function(elem) {
   return computedStyle(elem).display === 'block';
 };
@@ -150,8 +126,38 @@ exports.computedStyle = function(elem) {
 
 exports.TRANSPARENT = rgba(0, 0, 0, 0);
 
+exports.http = function(method, url, config) {
+  var Q = copyraptor.Q;
+  var defer = Q.defer();
+  config = config || {};
+
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, url, true);
+  if (config.headers) {
+    for (k in config.headers) {
+      xhr.setRequestHeader(k, config.headers[k]);
+    }
+  }
+  xhr.withCredentials = !!config.withCredentials;
+  xhr.onload = function (e) {
+    if (this.status == 200) {
+      defer.resolve(this);
+    } else {
+      defer.reject(this);
+    }
+  };
+
+  return {
+    send: function(payload) {
+      xhr.send(payload);
+      return defer.promise;
+    }
+  };
+}
+
 exports.loadCss = function(module) {
   document.head.appendChild(E('style', module.toString()));
 };
 
-}
+
+})(); }

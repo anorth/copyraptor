@@ -1,4 +1,4 @@
-with(require('./util')) { (function() {
+with(require('./apputil')) { (function() {
 
 module.exports = FocusRect;
 function FocusRect() {
