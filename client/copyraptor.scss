@@ -1,9 +1,8 @@
-/* TODO CSS reset the .copyraptor-app */
-.copyraptor-app {
+.copyraptor-app  {
   z-index: 10000000;
-}
+  @import 'reset';
 
-.copyraptor-app .main-panel {
+.main-panel {
   /* TODO: make it change in case want to edit very top of page */
   position: fixed;
   top: 0;
@@ -15,14 +14,14 @@
   background: rgba(0, 0, 0, 0.7);
 }
 
-.copyraptor-app .main-panel h1 {
+.main-panel h1 {
   font-weight: normal;
   font-size: 30px;
   font-family: monospace;
   display: inline-block;
   line-height: 40px;
 }
-.copyraptor-app .main-panel h1:before {
+.main-panel h1:before {
   content: ' ';
   display: block;
   float: left;
@@ -35,30 +34,30 @@
   border-radius: 20px;
 }
 
-.copyraptor-app .main-panel .controls {
+.main-panel .controls {
   display: inline-block;
   margin-left: 30px;
 }
 
-.copyraptor-app .loading-gif {
+.loading-gif {
   display: none;
 }
 
-.copyraptor-app .loading .loading-gif {
+.loading .loading-gif {
   display: inline-block;
 }
 
-.copyraptor-app .focus-rect-segment {
+.focus-rect-segment {
   overflow: hidden;
   position: absolute;
   opacity: 0.4;
   z-index: 9999999; /* Under copyraptor-app */
 }
-.copyraptor-app .editing .focus-rect-segment {
+.editing .focus-rect-segment {
   opacity: 0.6;
 }
 
-.copyraptor-app .focus-rect-segment:after {
+.focus-rect-segment:after {
   content: ' ';
   position: absolute;
   top: 0;
@@ -67,10 +66,10 @@
   bottom: 0;
 }
 
-.copyraptor-app .left.focus-rect-segment {
+.left.focus-rect-segment {
   transform: skew(0deg, 45deg);
 }
-.copyraptor-app .left.focus-rect-segment:after {
+.left.focus-rect-segment:after {
   top: -12px;
   bottom: 12px;
   background: linear-gradient(to left, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
@@ -78,10 +77,10 @@
   transform: skew(0deg, -63.43deg);
 }
 
-.copyraptor-app .right.focus-rect-segment {
+.right.focus-rect-segment {
   transform: skew(0deg, -45deg);
 }
-.copyraptor-app .right.focus-rect-segment:after {
+.right.focus-rect-segment:after {
   top: -12px;
   bottom: 12px;
   background: linear-gradient(to right, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
@@ -89,10 +88,10 @@
   transform: skew(0deg, 63.43deg);
 }
 
-.copyraptor-app .top.focus-rect-segment {
+.top.focus-rect-segment {
   transform: skew(45deg, 0deg);
 }
-.copyraptor-app .top.focus-rect-segment:after {
+.top.focus-rect-segment:after {
   left: -12px;
   right: 12px;
   background: linear-gradient(to top, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
@@ -100,10 +99,10 @@
   transform: skew(-63.43deg, 0deg);
 }
 
-.copyraptor-app .bottom.focus-rect-segment {
+.bottom.focus-rect-segment {
   transform: skew(-45deg, 0deg);
 }
-.copyraptor-app .bottom.focus-rect-segment:after {
+.bottom.focus-rect-segment:after {
   left: -12px;
   right: 12px;
   background: linear-gradient(to bottom, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
@@ -111,52 +110,54 @@
   transform: skew(63.43deg, 0deg);
 }
 
-.copyraptor-app button {
+button {
   background-color: rgb(135, 135, 243);
   color: white;
   margin: 5px;
   height: 30px;
 }
 
-.copyraptor-app .login-form {
+.login-form {
   padding: 5px 50px;
   display: none;
 }
 
-.copyraptor-app .login-form.visible {
+.login-form.visible {
   padding: 5px 50px;
   display: block;
 }
 
-.copyraptor-app .login-form p {
+.login-form p {
   font-weight: bold;
   margin-bottom: 5px;
 }
 
-.copyraptor-app .login-form p.error {
+.login-form p.error {
   font-weight: bold;
   color: rgb(248, 81, 81);
   display: none
 }
 
-.copyraptor-app .login-form.error p.error {
+.login-form.error p.error {
   display: block;
 }
 
-.copyraptor-app .login-form input {
+.login-form input {
   width: 180px;
   margin: 5px;
   line-height: 20px;
 }
 
-.copyraptor-app .login-form button {
+.login-form button {
   height: 45px;
 }
 
-.copyraptor-app .pending-changes {
+.pending-changes {
   display: none;
 }
 
-.copyraptor-app .pending-changes.visible {
+.pending-changes.visible {
   display: inline;
+}
+
 }

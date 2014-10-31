@@ -1,7 +1,7 @@
 
 var util = require('./apputil');
 
-util.loadCss(require('css!./copyraptor.css'));
+util.loadCss(require("!css!sass!./copyraptor.scss"));
 
 module.exports = function Editor(listener) {
   var me = this;

@@ -23,7 +23,7 @@ function requestHandler(handler) {
 }
 
 app.use(session({
-  secret: config.SECRET
+  secret: config.APP_SECRET
 }));
 app.use(bodyParser.json());
 app.use(express.static(__dirname + '/static'));
