@@ -161,6 +161,7 @@ exports.loadCss = function(module) {
 };
 
 exports.descendantMatches = function(elem, predicate) {
+
   for (var node = elem.firstChild; node != null; node = node.nextSibling) {
     var matches = predicate(node);
     if (matches) {
@@ -168,7 +169,10 @@ exports.descendantMatches = function(elem, predicate) {
     }
 
     if (node.nodeType == 1) {
-      return descendantMatches(node, predicate);
+      var matches = descendantMatches(node, predicate);
+      if (matches) {
+        return true;
+      }
     }
   }
 

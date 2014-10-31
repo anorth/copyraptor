@@ -51,11 +51,11 @@
 .copyraptor-app .focus-rect-segment {
   overflow: hidden;
   position: absolute;
-  opacity: 0.6;
+  opacity: 0.4;
   z-index: 9999999; /* Under copyraptor-app */
 }
 .copyraptor-app .editing .focus-rect-segment {
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .copyraptor-app .focus-rect-segment:after {
@@ -74,6 +74,7 @@
   top: -12px;
   bottom: 12px;
   background: linear-gradient(to left, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+  background: linear-gradient(to left, black, rgba(0,0,0,0));
   transform: skew(0deg, -63.43deg);
 }
 
@@ -84,6 +85,7 @@
   top: -12px;
   bottom: 12px;
   background: linear-gradient(to right, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+  background: linear-gradient(to right, black, rgba(0,0,0,0));
   transform: skew(0deg, 63.43deg);
 }
 
@@ -94,6 +96,7 @@
   left: -12px;
   right: 12px;
   background: linear-gradient(to top, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+  background: linear-gradient(to top, black, rgba(0,0,0,0));
   transform: skew(-63.43deg, 0deg);
 }
 
@@ -104,6 +107,7 @@
   left: -12px;
   right: 12px;
   background: linear-gradient(to bottom, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+  background: linear-gradient(to bottom, black, rgba(0,0,0,0));
   transform: skew(63.43deg, 0deg);
 }
 

@@ -45,7 +45,17 @@ function FocusRect() {
       )
     );
 
+  me.reposition = function() {
+    // Re-position after scroll
+    if (me.wrapped) {
+      me.wrap(me.wrapped);
+    }
+  };
+
   me.hide();
+
+  window.addEventListener('scroll', me.reposition);
+  window.addEventListener('resize', me.reposition);
 }
 
 FocusRect.prototype.hide = function() {

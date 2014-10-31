@@ -138,11 +138,18 @@ function EditorApp(injector, editable) {
       return;
     }
 
-    if (!isSuitableForEditing(elem)) {
-      return;
-    }
+    tryFocusElem(elem);
+  }
 
-    focusRect.wrap(elem);
+  function tryFocusElem(elem) {
+    while (elem != null) {
+      if (isSuitableForEditing(elem)) {
+        focusRect.wrap(elem);
+        return;
+      }
+
+      elem = elem.parentNode;
+    }
   }
 
   function leaveElem(ev) {
@@ -152,10 +159,10 @@ function EditorApp(injector, editable) {
     //  return;
     //}
 
-    //if (editor.attached()) {
-    //  return;
-    //}
-    //focusRect.hide();
+    if (editor.attached()) {
+      return;
+    }
+    focusRect.hide();
   }
 
   function mousedownElem(ev) {
@@ -164,13 +171,19 @@ function EditorApp(injector, editable) {
     if (editor.attached()) {
       if (!isOrHasChild(editor.currentElem(), elem)) {
         editor.detach();
+        tryEdit(elem);
       }
     } else {
-      if (isOrHasChild(focusRect.wrapped, elem)) {
-        editor.attach(focusRect.wrapped);
-      }
+      tryEdit(elem);
     }
+  }
 
+  function tryEdit(elem) {
+    tryFocusElem(elem);
+    if (isOrHasChild(focusRect.wrapped, elem)) {
+      console.debug("EDIT ELEM", focusRect.wrapped);
+      editor.attach(focusRect.wrapped);
+    }
   }
 
   function isSuitableForEditing(elem) {
