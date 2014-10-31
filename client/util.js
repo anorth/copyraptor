@@ -150,35 +150,6 @@ exports.computedStyle = function(elem) {
 
 exports.TRANSPARENT = rgba(0, 0, 0, 0);
 
-exports.http = function(method, url, config) {
-  var Q = copyraptor.Q;
-  var defer = Q.defer();
-  config = config || {};
-
-  var xhr = new XMLHttpRequest();
-  xhr.open(method, url, true);
-  if (config.headers) {
-    for (k in config.headers) {
-      xhr.setRequestHeader(k, config.headers[k]);
-    }
-  }
-  xhr.withCredentials = !!config.withCredentials;
-  xhr.onload = function (e) {
-    if (this.status == 200) {
-      defer.resolve(this);
-    } else {
-      defer.reject(this);
-    }
-  };
-
-  return {
-    send: function(payload) {
-      xhr.send(payload);
-      return defer.promise;
-    }
-  };
-}
-
 exports.loadCss = function(module) {
   document.head.appendChild(E('style', module.toString()));
 };

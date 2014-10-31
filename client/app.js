@@ -1,8 +1,36 @@
 with(require('./util')) { (function() {
 
-var Q = require('./q');
+var Q = require('q');
 var API_SERVER = 'http://localhost:3000/api';
 var STATIC_SERVER = 'http://localhost:5544';
+
+function http(method, url, config) {
+  var defer = Q.defer();
+  config = config || {};
+
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, url, true);
+  if (config.headers) {
+    for (k in config.headers) {
+      xhr.setRequestHeader(k, config.headers[k]);
+    }
+  }
+  xhr.withCredentials = !!config.withCredentials;
+  xhr.onload = function (e) {
+    if (this.status == 200) {
+      defer.resolve(this);
+    } else {
+      defer.reject(this);
+    }
+  };
+
+  return {
+    send: function(payload) {
+      xhr.send(payload);
+      return defer.promise;
+    }
+  };
+}
 
 function save(payload, sitekey) {
   return http("POST", API_SERVER + '/upload-url', {
