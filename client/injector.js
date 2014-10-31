@@ -259,8 +259,11 @@
     return newArgs;
   }
 
+  // TODO(alex): Do this on demand from user interaction
+  var showEditor = !!queryParam("copyraptor");
+
   var env = (function() {
-    var sitekey, staticPath, serverPath, blobHost;
+    var sitekey, staticPath, serverPath, contentBlobHost, contentCdnHost;
 
     // Find the script element that loaded this script to extract the site id
     var tags = document.head.querySelectorAll("script");
@@ -281,10 +284,11 @@
       var host = m[3];
       if (host.slice(0, 9) === 'localhost') {
         serverPath = 'http://localhost:3000';
-        blobHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
+        contentBlobHost = contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
       } else {
         serverPath = scheme + 'www.copyraptor.com';
-        blobHost = 'content.copyraptor.com';
+        contentBlobHost = 'com.copyraptor.content.s3-us-west-2.amazonaws.com';
+        contentCdnHost = 'content.copyraptor.com';
       }
 
       __webpack_require__.p = staticPath + '/';
@@ -295,13 +299,14 @@
       staticPath: function() { return staticPath; },
       serverPath: function() { return serverPath; },
       apiPath: function() { return serverPath + "/api"; },
-      blobHost: function() { return blobHost; },
-      contentSrc: function() { return scheme + blobHost + '/' + sitekey; }
+      contentBlobHost: function() { return contentBlobHost; },
+      contentCdnHost: function() { return contentCdnHost; },
+      // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
+      contentSrc: function() { return scheme + (showEditor ? contentBlobHost : contentCdnHost) + '/' + sitekey; }
     };
   })();
 
   // Hook into document
-
   var injector = module.exports = window.copyraptor = {
     env: env,
     initialContent: initialContent,
@@ -322,8 +327,6 @@
     log("DOMContentLoaded");
     applyInitialChanges();
 
-    // TODO(alex): Do this on demand from user interaction
-    var showEditor = !!queryParam("copyraptor");
     if (showEditor) {
       require.ensure(['./editor'], function(require) {
         var EditorApp = require('./app');
