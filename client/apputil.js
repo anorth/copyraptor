@@ -118,8 +118,8 @@ exports.applyItems = function(elem, items) {
   }
 };
 
-exports.isBlock = function(elem) {
-  return computedStyle(elem).display === 'block';
+exports.displayType = function(elem) {
+  return computedStyle(elem).display;
 };
 
 exports.computedStyle = function(elem) {
@@ -158,6 +158,21 @@ exports.http = function http(method, url, config) {
 
 exports.loadCss = function(module) {
   document.head.appendChild(E('style', module.toString()));
+};
+
+exports.descendantMatches = function(elem, predicate) {
+  for (var node = elem.firstChild; node != null; node = node.nextSibling) {
+    var matches = predicate(node);
+    if (matches) {
+      return true;
+    }
+
+    if (node.nodeType == 1) {
+      return descendantMatches(node, predicate);
+    }
+  }
+
+  return false;
 };
 
 

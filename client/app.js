@@ -174,7 +174,20 @@ function EditorApp(injector, editable) {
   }
 
   function isSuitableForEditing(elem) {
-    return isBlock(elem);
+    var isCandidate = isIntrinsicallySuitable(elem);
+    var containsCandidate = util.descendantMatches(elem, isIntrinsicallySuitable);
+
+    return isCandidate && !containsCandidate;
+  }
+
+  function isIntrinsicallySuitable(node) {
+    if (node.nodeType !== 1) {
+      return;
+    }
+
+    var display = util.displayType(node);
+
+    return display == 'block' || display == 'inline-block';
   }
 
   /**
