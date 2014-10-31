@@ -1,10 +1,9 @@
 #!/bin/sh
 
-CREDENTIALS_FILE="../aws-credentials.sh"
-CODE_BUCKET="s3://com.copyraptor.code"
-
 export AWS_DEFAULT_REGION=us-west-2
 
+CREDENTIALS_FILE="../admin-credentials.sh"
+CODE_BUCKET="s3://com.copyraptor.code"
 
 if [ -f ${CREDENTIALS_FILE} ]
 then
