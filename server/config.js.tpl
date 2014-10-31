@@ -1,7 +1,7 @@
 module.exports = {
   AWS: {
-    region: 'ap-southeast-2',
-    bucket: 'devstore.copyraptor.com'
+    region: 'us-west-2',
+    bucket: 'com.copyraptor.content-dev'
   },
 
   USERS: {
