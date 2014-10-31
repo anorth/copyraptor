@@ -1,68 +1,10 @@
 var util = require('./apputil');
+var CopyraptorService = require('./service.js');
 
 // TODO(dan): Kill this with() block.
 with(util) { (function() {
 
 var Q = require('q');
-var API_SERVER = 'http://localhost:3000/api';
-var STATIC_SERVER = 'http://localhost:5544';
-
-function http(method, url, config) {
-  var defer = Q.defer();
-  config = config || {};
-
-  var xhr = new XMLHttpRequest();
-  xhr.open(method, url, true);
-  if (config.headers) {
-    for (k in config.headers) {
-      xhr.setRequestHeader(k, config.headers[k]);
-    }
-  }
-  xhr.withCredentials = !!config.withCredentials;
-  xhr.onload = function (e) {
-    if (this.status == 200) {
-      defer.resolve(this);
-    } else {
-      defer.reject(this);
-    }
-  };
-
-  return {
-    send: function(payload) {
-      xhr.send(payload);
-      return defer.promise;
-    }
-  };
-}
-
-function save(payload, sitekey) {
-  return http("POST", API_SERVER + '/upload-url', {
-      headers: {'Content-Type': 'application/json'},
-      withCredentials: true
-  })
-  .send(JSON.stringify({
-    sitekey: sitekey,
-    contentType: 'application/javascript'
-  })).then(function(resp) {
-    console.log("Saving", payload);
-    
-    var putUrl = JSON.parse(resp.responseText).putUrl;
-    return http("PUT", putUrl, {
-      headers: {'Content-Type': 'application/javascript'}
-    }).send(payload);
-  });
-}
-
-function doAuth(username, password) {
-  return http("POST", API_SERVER + '/login', {
-      headers: {'Content-Type': 'application/json'},
-      withCredentials: true
-  })
-  .send(JSON.stringify({
-    username: username,
-    password: password
-  }))
-}
 
 var Editor = require('./editor');
 var FocusRect = require('./focus-rect');
@@ -71,6 +13,12 @@ module.exports = EditorApp;
 function EditorApp(injector, editable) {
   assert(injector);
   editable = !!editable;
+
+  var env = injector.env || {};
+  var staticPath = env.STATIC_SERVER || 'http://localhost:5544';
+  var apiBase = env.API_SERVER || 'http://localhost:3000/api';
+
+  var service = new CopyraptorService(apiBase);
 
   var me = this;
 
@@ -101,7 +49,7 @@ function EditorApp(injector, editable) {
   });
 
   function loadingGif() {
-    return E('img', {className: 'loading-gif', src: STATIC_SERVER + '/assets/ajax-loader.gif'});
+    return E('img', {className: 'loading-gif', src: staticPath + '/assets/ajax-loader.gif'});
   }
 
   var login = divc('login-form',
@@ -110,7 +58,7 @@ function EditorApp(injector, editable) {
         try {
           var me = this;
           addClass(login, 'loading');
-          doAuth(me.elements.user.value, me.elements.pass.value)
+          service.doAuth(me.elements.user.value, me.elements.pass.value)
             .then(function() {
               removeClass(login, 'visible');
             })
@@ -149,14 +97,14 @@ function EditorApp(injector, editable) {
         var me = this;
         addClass(me, 'loading');
 
-        save(injector.getPayload(), injector.env.siteKey())
+        service.save(injector.getPayload(), injector.env.siteKey())
           .then(function() {
             noUnsavedChanges();
           })
           .catch(function(resp) {
             console.log(resp);
             if (resp.status == 401) { // unauthorised
-              addClass(login, 'visible');
+              util.addClass(login, 'visible');
               return;
             }
             console.log(resp);

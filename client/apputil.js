@@ -3,8 +3,10 @@
  * Re-exports ./common, so no need to use both.
  */
 
+var Q = require('q');
+
 // Re-export common
-common = require('./common');
+var common = require('./common');
 for (var k in common) {
   exports[k] = common[k];
 }
@@ -126,8 +128,7 @@ exports.computedStyle = function(elem) {
 
 exports.TRANSPARENT = rgba(0, 0, 0, 0);
 
-exports.http = function(method, url, config) {
-  var Q = copyraptor.Q;
+exports.http = function http(method, url, config) {
   var defer = Q.defer();
   config = config || {};
 
