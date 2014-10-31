@@ -6,6 +6,4 @@ node_modules/
 .DS_Store
 admin-credentials.sh
 app-credentials.sh
-server/config.js
 aws-credentials.sh
->>>>>>> Stashed changes
