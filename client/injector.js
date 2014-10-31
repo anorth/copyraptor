@@ -260,7 +260,7 @@
   }
 
   var env = (function() {
-    var sitekey, scriptPath, blobHost;
+    var sitekey, staticPath, serverPath, blobHost;
 
     // Find the script element that loaded this script to extract the site id
     var tags = document.head.querySelectorAll("script");
@@ -270,23 +270,31 @@
       // TODO(alex): Fallback to site from domain name
       sitekey = tag.getAttribute("data-copyraptor-site");
       if (sitekey !== undefined) {
-        scriptPath = tag.src.split(/[\w_-]+.js/)[0];
+        staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
         break;
       }
     }
 
-    if (scriptPath) {
-      var m = scriptPath.match(new RegExp("(http(s)?://)([\\w:.]+)/.*"));
+    if (staticPath) {
+      var m = staticPath.match(new RegExp("(http(s)?://)([\\w:.]+).*"));
       var scheme = m[1];
       var host = m[3];
-      blobHost = (host.slice(0, 9) === 'localhost') ? 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com' : 'content.copyraptor.com';
+      if (host.slice(0, 9) === 'localhost') {
+        serverPath = 'http://localhost:3000';
+        blobHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
+      } else {
+        serverPath = 'http://copyraptor.com';
+        blobHost = 'content.copyraptor.com';
+      }
 
-      __webpack_require__.p = scriptPath;
+      __webpack_require__.p = staticPath + '/';
     }
 
     return {
       siteKey: function() { return sitekey; },
-      scriptPath: function() { return scriptPath; },
+      staticPath: function() { return staticPath; },
+      serverPath: function() { return serverPath; },
+      apiPath: function() { return serverPath + "/api"; },
       blobHost: function() { return blobHost; },
       contentSrc: function() { return scheme + blobHost + '/' + sitekey; }
     };

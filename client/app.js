@@ -14,9 +14,9 @@ function EditorApp(injector, editable) {
   assert(injector);
   editable = !!editable;
 
-  var env = injector.env || {};
-  var staticPath = env.STATIC_SERVER || 'http://localhost:5544';
-  var apiBase = env.API_SERVER || 'http://localhost:3000/api';
+  var env = injector.env;
+  var staticPath = env.staticPath();
+  var apiBase = env.apiPath();
 
   var service = new CopyraptorService(apiBase);
 
@@ -50,7 +50,7 @@ function EditorApp(injector, editable) {
 
   function loadingGif() {
     return E('img', {className: 'loading-gif', src: staticPath + '/assets/ajax-loader.gif'});
-  }
+}
 
   var login = divc('login-form',
       E('p', 'Session expired, please login to save'),
