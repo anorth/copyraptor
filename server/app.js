@@ -26,6 +26,7 @@ app.use(session({
   secret: config.SECRET
 }));
 app.use(bodyParser.json());
+app.use(express.static(__dirname + '/static'));
 
 function setCorsHeaders(req, res) {
   var origin = req.get('Origin');
@@ -40,8 +41,6 @@ function setCorsHeaders(req, res) {
     }
   }
 }
-
-app.get('/', function(req, res) { res.send("Hello"); });
 
 app.options(/\/api\/.*/, requestHandler(function(req, res) {
   setCorsHeaders(req, res);
