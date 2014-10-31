@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  var util = require('./common');
+  //var util = require('./common');
 
   var injectedContent = emptyContent(); // Overwritten by initialContent
   var nextEditKey = 1;
