@@ -4,9 +4,10 @@ source ./app-credentials.sh
 export PORT=3000 
 
 cd server
-which nodemon
-if [ $? ]; then
+if [ ! $? ]; then
   node-dev app.js
+else
+  nodemon app.js
 fi
 
 #node-dev app.js
