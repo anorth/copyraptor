@@ -5,6 +5,7 @@ var CopyraptorService = require('./service.js');
 with(util) { (function() {
 
 var Q = require('q');
+Q.longStackSupport = true;
 
 var Editor = require('./editor');
 var FocusRect = require('./focus-rect');
@@ -18,7 +19,8 @@ function EditorApp(injector, editable) {
   var staticPath = env.staticPath();
   var apiBase = env.apiPath();
 
-  var service = new CopyraptorService(apiBase);
+  var service = new CopyraptorService(apiBase,
+      injector.env.siteKey(), env.contentSrc);
 
   var me = this;
 
@@ -26,6 +28,27 @@ function EditorApp(injector, editable) {
   var unsavedChanges = E('span', {className: 'pending-changes'}, '(unsaved changes)');
   function hasUnsavedChanges() { addClass(unsavedChanges, 'visible'); }
   function noUnsavedChanges() { removeClass(unsavedChanges, 'visible'); }
+
+  var liveState = injector.getContent();
+
+  service.load('draft').then(function(content) {
+    console.log("GOT DRAFT", content);
+
+    if (content) {
+      injector.setContent(content);
+    }
+
+    removeNode(loadingMsg);
+
+    init();
+  });
+
+  function init() {
+    controls.style.display = '';
+    document.body.addEventListener('mouseover', contentHandler(enterElem));
+    document.body.addEventListener('mouseout',  contentHandler(leaveElem));
+    document.body.addEventListener('mousedown', contentHandler(mousedownElem));
+  }
 
   var editor = new Editor({
     onChange: function() {
@@ -47,10 +70,6 @@ function EditorApp(injector, editable) {
         hasUnsavedChanges();
     }
   });
-
-  function loadingGif() {
-    return E('img', {className: 'loading-gif', src: staticPath + '/assets/ajax-loader.gif'});
-}
 
   var login = divc('login-form',
       E('p', 'Session expired, please login to save'),
@@ -76,45 +95,76 @@ function EditorApp(injector, editable) {
         E('p', {'className': 'error'}, 'Invalid username or password'),
         E('input', {type:'text', name: 'user', 'placeholder': 'username'}),
         E('input', {type:'password', name: 'pass', 'placeholder': 'password'}),
-        E('button', 'login ', loadingGif())
+        E('button', 'login ')
       )
   );
 
+  function save(version) {
+    return service.save(injector.getPayload(), version)
+      .then(function() {
+        noUnsavedChanges();
+      })
+      .catch(function(resp) {
+        if (resp.status == 401) { // unauthorised
+          util.addClass(login, 'visible');
+          return;
+        }
+      });
+  }
+
+  var controls;
+  var loadingMsg;
+
+
+  // Quick hack toggle button for now.
+  var currentVersion = 'draft';
+  var draftState = null;
+  var switchViewButton = button('View Live', function() {
+    if (currentVersion == 'draft') {
+      currentVersion = 'live';
+      draftState = injector.getContent();
+      injector.setContent(liveState);
+      switchViewButton.innerText = 'View Draft';
+    } else {
+      currentVersion = 'draft';
+      assert(draftState);
+      injector.setContent(draftState);
+      switchViewButton.innerText = 'View Live';
+    }
+  });
+
   me.elem = divc('main-panel', 
       h1('Copyraptor'),
-      divc('controls', 
+      loadingMsg = divc('controls', 'Loading...'),
+      controls = divc('controls',  {style:{display:'none'}}, // initially hidden
         checkBox('Editable', editable, function(isEditable) {
           editable = isEditable;
           if (!editable) {
             editor.detach();
             focusRect.hide();
           }
-        })
-      ),
-      button(['Save ', 
-              loadingGif()
-             ], function() {
-        var me = this;
-        addClass(me, 'loading');
+        }),
+        promiseButton('Publish', function() {
+          var content = injector.getContent();
 
-        service.save(injector.getPayload(), injector.env.siteKey())
-          .then(function() {
-            noUnsavedChanges();
-          })
-          .catch(function(resp) {
-            console.log(resp);
-            if (resp.status == 401) { // unauthorised
-              util.addClass(login, 'visible');
-              return;
-            }
-            console.log(resp);
-          }).finally(function() {
-            removeClass(me, 'loading');
+          // Could use Q.all, but perhaps best to save in order so draft always > live.
+          return save('draft').then(function() {
+            return save('live');
+          }).then(function() {
+            liveState = content;
           });
-      }),
-      button('Reset all', function() {injector.clear();}),
-      unsavedChanges,
-      login,
+        }),
+        promiseButton('Save to Draft', function() {
+          return save('draft');
+        }),
+        ' | ',
+        switchViewButton,
+        E('a', 'Clear all Copyraptor Changes', { onclick: function() {
+          injector.clear();
+        }}),
+        unsavedChanges,
+        login
+      ),
       focusRect
     );
 
@@ -126,10 +176,6 @@ function EditorApp(injector, editable) {
     document.body.appendChild(
         divc('copyraptor-app', me));
   };
-
-  document.body.addEventListener('mouseover', contentHandler(enterElem));
-  document.body.addEventListener('mouseout',  contentHandler(leaveElem));
-  document.body.addEventListener('mousedown', contentHandler(mousedownElem));
 
   function enterElem(ev) {
     var elem = ev.target;
@@ -181,7 +227,6 @@ function EditorApp(injector, editable) {
   function tryEdit(elem) {
     tryFocusElem(elem);
     if (isOrHasChild(focusRect.wrapped, elem)) {
-      console.debug("EDIT ELEM", focusRect.wrapped);
       editor.attach(focusRect.wrapped);
     }
   }

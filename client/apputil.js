@@ -63,6 +63,24 @@ exports.checkBox = function(label, initial, listener) {
 exports.button = function(label, listener) {
   return E('button', {onclick: listener}, label);
 };
+exports.promiseButton = function(label, listener) {
+  var elem = button(label, function() {
+
+    addClass(elem, 'loading');
+    listener().then(function() {
+      removeClass(elem, 'loading');
+    })
+    .catch(function(err) {
+      console.error(new Error('stack of catch'));
+      console.error(err);
+      // TODO: Better UX for this.
+      elem.innerText = '(Error!)';
+      throw err;
+    });
+  });
+
+  return elem;
+};
 
 exports.E = function(tagName /*, props/children list intermingled */) {
   var elem = document.createElement(tagName);
@@ -72,6 +90,14 @@ exports.E = function(tagName /*, props/children list intermingled */) {
 
 
   return elem;
+};
+
+exports.removeNode = function(node) {
+  if (!node || !node.parentNode) {
+    return;
+  }
+
+  node.parentNode.removeChild(node);
 };
 
 

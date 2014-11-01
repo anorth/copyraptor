@@ -1,6 +1,7 @@
 (function() {
   'use strict';
-  //var util = require('./common');
+  var util = require('./common');
+  var assert = util.assert;
 
   var injectedContent = emptyContent(); // Overwritten by initialContent
   var nextEditKey = 1;
@@ -173,6 +174,13 @@
     if (initialChangesApplied || injectedContent == undefined) { return; }
     log("Applying initial changes");
     initialChangesApplied = true;
+
+    applyContent();
+
+    watchDom();
+  }
+
+  function applyContent() {
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
       if (elt) {
@@ -183,8 +191,6 @@
         log("No elt (yet) for key " + key, spec);
       }
     });
-
-    watchDom();
   }
 
   function watchDom() {
@@ -246,7 +252,7 @@
   }
 
   function log() {
-    console.log.apply(console, logargs(arguments));
+    // console.log.apply(console, logargs(arguments));
   }
   function warn() {
     console.warn.apply(console, logargs(arguments));
@@ -302,7 +308,11 @@
       contentBlobHost: function() { return contentBlobHost; },
       contentCdnHost: function() { return contentCdnHost; },
       // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
-      contentSrc: function() { return scheme + (showEditor ? contentBlobHost : contentCdnHost) + '/' + sitekey; }
+      contentSrc: function(version) { 
+        assert(version);
+        return scheme + (showEditor ? contentBlobHost : contentCdnHost) + 
+            '/' + sitekey + '/' + version;
+      }
     };
   })();
 
@@ -315,11 +325,19 @@
     resetElement: resetElement,
     clear: clear,
 
+    getContent: function() {
+      return injectedContent;
+    },
+    setContent: function(content) {
+      clear();
+      injectedContent = content;
+      applyContent();
+    },
+
     getPayload: function() {
-      if (injectedContent === undefined) {
-        throw new Exception("initialContent is undefined, should never be the case");
-      }
-      return "(function() {window.copyraptor.initialContent(" + JSON.stringify(injectedContent) + ");})()";
+      assert(injectedContent, "initialContent is undefined, should never be the case");
+
+      return "copyraptor.initialContent(" + JSON.stringify(injector.getContent()) + ");";
     }
   };
   
@@ -341,6 +359,6 @@
   // Insert a script element after this to load the content synchronously
   if (env.siteKey() !== undefined) {
     // NOTE(alex): appendChild-style DOM manipulation does not execute the script synchronously.
-    document.write('<script type="text/javascript" src="' + env.contentSrc() + '"></script>');
+    document.write('<script type="text/javascript" src="' + env.contentSrc('live') + '"></script>');
   }
 })();

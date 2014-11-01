@@ -70,6 +70,14 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
   // an existing site needs authentication
   var siteKey = req.body.sitekey;
+  var version = req.body.version;
+
+  if (!siteKey || !version) {
+    throw {httpcode:400, message:'sitekey and version required'};
+  }
+
+  var bucketKey = siteKey + '/' + version;
+
   var siteUser = config.USERS[siteKey];
   if (siteUser && !req.session.user) {
     res.status(401).send();
@@ -85,26 +93,26 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
 
   return Q.ninvoke(s3, 'headObject', {
      Bucket: config.AWS.bucket, 
-     Key: siteKey
+     Key: bucketKey
   }).catch(function() {
     // object doesn't exist, create it
-    console.log("No object for " + siteKey + ", creating it.");
+    console.log("No object for " + bucketKey + ", creating it.");
     return Q.ninvoke(s3, 'putObject', {
        Bucket: config.AWS.bucket, 
-       Key: siteKey,
+       Key: bucketKey,
        ACL: 'public-read',
        Body: '(function(){})()'
     });
   }).then(function() {
     return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
      Bucket: config.AWS.bucket, 
-     Key: siteKey,
+     Key: bucketKey,
      Expires: 60 * 5, // 5 minutes,
      ContentType: req.body.contentType,
      ACL: 'public-read'
     });
   }).then(function(url) {
-    console.log(siteKey + " -> " + url);
+    console.log(bucketKey + " -> " + url);
     res.send({putUrl: url});
   });
 }));
