@@ -144,12 +144,9 @@ button {
   height: 45px;
 }
 
-.pending-changes {
-  display: none;
-}
-
-.pending-changes.visible {
-  display: inline;
+.status-text {
+  padding: 0 20px;
+  display: inline-block;
 }
 
 button.loading:after {

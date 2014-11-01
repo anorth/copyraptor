@@ -20,7 +20,7 @@
     log("Initial content received, next edit key: " + nextEditKey);
   }
 
-  function beginEditingElement(elt) {
+  function trackElement(elt) {
     var key = elt.copyraptorkey = elt.copyraptorkey || nextEditKey++;
     if (originalContent[key] === undefined) {
       var content = extractContent(elt);
@@ -29,7 +29,7 @@
     }
   }
 
-  function endEditingElement(elt) {
+  function updateElement(elt) {
     var key = elt.copyraptorkey;
     if (key !== undefined) {
       var content = extractContent(elt);
@@ -153,6 +153,11 @@
   }
 
   function injectContent(elt, key, content) {
+    if (elt.contentEditable == 'true') {
+      log("Not clobbering content being edited");
+      return;
+    }
+
     if (elt.copyraptorkey === undefined) {
       elt.copyraptorkey = key;
     } else if (elt.copyraptorkey !== key) {
@@ -320,8 +325,8 @@
   var injector = module.exports = window.copyraptor = {
     env: env,
     initialContent: initialContent,
-    beginEditingElement: beginEditingElement,
-    endEditingElement: endEditingElement,
+    trackElement: trackElement,
+    updateElement: updateElement,
     resetElement: resetElement,
     clear: clear,
 

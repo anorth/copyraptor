@@ -25,15 +25,24 @@ function EditorApp(injector, editable) {
   var me = this;
 
   var focusRect = new FocusRect();
-  var unsavedChanges = E('span', {className: 'pending-changes'}, '(unsaved changes)');
-  function hasUnsavedChanges() { addClass(unsavedChanges, 'visible'); }
-  function noUnsavedChanges() { removeClass(unsavedChanges, 'visible'); }
+  var statusText = divc('status-text');
+  var saveState;
+
+  updateStatus('saved');
+  function updateStatus(state) {
+    assert(state == 'unsaved' || state == 'saving' || state == 'saved');
+    if (state == 'saved') {
+      // don't clobber unsaved state if pending edits while saving.
+      assert(saveState != 'unsaved');
+    }
+
+    saveState = state;
+    statusText.innerText = '(' + saveState + ')';
+  }
 
   var liveState = injector.getContent();
 
   service.load('draft').then(function(content) {
-    console.log("GOT DRAFT", content);
-
     if (content) {
       injector.setContent(content);
     }
@@ -55,20 +64,38 @@ function EditorApp(injector, editable) {
       // Content size may have changed, 
       // reset the focus rect around the element.
       focusRect.wrap(editor.currentElem());
+
+      saveElem(editor.currentElem());
     },
     onAttached: function(elem) {
       addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
       this.current = injector.getPayload();
-      injector.beginEditingElement(elem);
+      injector.trackElement(elem);
     },
     onDetached: function(elem) {
       removeClass(me.elem, 'editing');
       focusRect.hide();
-      injector.endEditingElement(elem);
-      if (this.current != injector.getPayload())
-        hasUnsavedChanges();
+      // saveElem(elem);
     }
+  });
+
+  function saveElem(elem) {
+    injector.updateElement(elem);
+    updateStatus('unsaved');
+    autoSave();
+  }
+
+  // TODO(dan): Rate limit on save promise as well.
+  var autoSave = util.rateLimited(2000, function() {
+    updateStatus('saving');
+    save('draft').then(function() {
+      if (saveState == 'saving') {
+        updateStatus('saved');
+      } else {
+        autoSave();
+      }
+    });
   });
 
   var login = divc('login-form',
@@ -125,11 +152,13 @@ function EditorApp(injector, editable) {
       draftState = injector.getContent();
       injector.setContent(liveState);
       switchViewButton.innerText = 'View Draft';
+      editable = false;
     } else {
       currentVersion = 'draft';
       assert(draftState);
       injector.setContent(draftState);
       switchViewButton.innerText = 'View Live';
+      editable = true;
     }
   });
 
@@ -148,21 +177,22 @@ function EditorApp(injector, editable) {
           var content = injector.getContent();
 
           // Could use Q.all, but perhaps best to save in order so draft always > live.
-          return save('draft').then(function() {
-            return save('live');
-          }).then(function() {
+          return save('live').then(function() {
             liveState = content;
           });
-        }),
-        promiseButton('Save to Draft', function() {
-          return save('draft');
         }),
         ' | ',
         switchViewButton,
         E('a', 'Clear all Copyraptor Changes', { onclick: function() {
+          if (!editable) {
+            alert("Goto draft first (TODO better ux)");
+            return;
+          }
+
+          editor.detach();
           injector.clear();
         }}),
-        unsavedChanges,
+        statusText,
         login
       ),
       focusRect

@@ -205,5 +205,36 @@ exports.descendantMatches = function(elem, predicate) {
   return false;
 };
 
+exports.rateLimited = function(intervalMillis, func) {
+  if (!intervalMillis || intervalMillis < 0) {
+    intervalMillis = 0;
+  }
+
+  var scheduled = false;
+  var lastScheduled = 0;
+
+  function run() {
+    scheduled = false;
+    func();
+  }
+
+  function schedule() {
+    if (scheduled) {
+      return;
+    }
+
+    scheduled = true;
+
+    var now = Date.now();
+    var earliest = lastScheduled + intervalMillis;
+    var delay = earliest > now ? earliest - now : 0;
+
+    lastScheduled = now + delay;
+
+    setTimeout(run, delay);
+  };
+
+  return schedule;
+};
 
 })(); }
