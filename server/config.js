@@ -1,6 +1,6 @@
 module.exports = {
   AWS: {
-    region: 'ap-southeast-2',
+    region: 'us-west-2',
     bucket: 'com.copyraptor.content-dev'
   },
 
@@ -9,5 +9,5 @@ module.exports = {
     firstorder: { password: 'firstorder' }
   },
 
-  APP_SECRET: '02930asjfo;aj0[129i30[kasdjfkasjdf0192asfd',
-}
+  APP_SECRET: '02930asjfo;aj0[129i30[kasdjfkasjdf0192asfd'
+};
