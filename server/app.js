@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 var Q = require('q');
-var config = require((!!process.env.ENV) ? './config-' + process.env.ENV : './config');
+var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './config');
 var bodyParser = require('body-parser');
 var session = require('cookie-session');
 var AWS = require('aws-sdk'); 

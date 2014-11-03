@@ -10,5 +10,5 @@ module.exports = {
     firstorder: { password: 'firstorder' }
   },
 
-  SECRET: 'xMrVg4uLEKyGd4vdaXQV'
+  APP_SECRET: 'xMrVg4uLEKyGd4vdaXQV'
 };
