@@ -181,7 +181,6 @@
     initialChangesApplied = true;
 
     applyContent();
-
     watchDom();
   }
 
@@ -257,7 +256,7 @@
   }
 
   function log() {
-    // console.log.apply(console, logargs(arguments));
+    console.log.apply(console, logargs(arguments));
   }
   function warn() {
     console.warn.apply(console, logargs(arguments));
@@ -271,7 +270,7 @@
   }
 
   // TODO(alex): Do this on demand from user interaction
-  var showEditor = !!queryParam("copyraptor");
+  var showEditorImmediately = !!queryParam("copyraptor");
 
   var env = (function() {
     var sitekey, staticPath, serverPath, contentBlobHost, contentCdnHost;
@@ -315,11 +314,21 @@
       // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
       contentSrc: function(version) { 
         assert(version);
-        return scheme + (showEditor ? contentBlobHost : contentCdnHost) + 
+        return scheme + (showEditorImmediately ? contentBlobHost : contentCdnHost) +
             '/' + sitekey + '/' + version;
       }
     };
   })();
+
+  function showEditor() {
+    require.ensure(['./editor'], function(require) {
+      var EditorApp = require('./app');
+
+      var editing = !!queryParam("e");
+      var editorApp = new EditorApp(injector, editing);
+      editorApp.show();
+    });
+  }
 
   // Hook into document
   var injector = module.exports = window.copyraptor = {
@@ -329,6 +338,8 @@
     updateElement: updateElement,
     resetElement: resetElement,
     clear: clear,
+
+    showEditor: showEditor,
 
     getContent: function() {
       return injectedContent;
@@ -350,14 +361,8 @@
     log("DOMContentLoaded");
     applyInitialChanges();
 
-    if (showEditor) {
-      require.ensure(['./editor'], function(require) {
-        var EditorApp = require('./app');
-
-        var editing = !!queryParam("e");
-        var editorApp = new EditorApp(injector, editing);
-        editorApp.show();
-      });
+    if (showEditorImmediately) {
+      showEditor();
     }
   });
 
