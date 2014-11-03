@@ -384,7 +384,7 @@
 
   // Insert a script element after this to load the content synchronously
   if (env.params().site !== undefined) {
-    if (env.params().async) {
+    if (env.params().async || (/loaded|complete|interactive/.test(document.readyState))) {
       var el = document.createElement("script");
       el.setAttribute("type", "text/javascript");
       el.setAttribute("src", env.contentSrc('live'));

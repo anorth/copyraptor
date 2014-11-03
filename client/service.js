@@ -30,7 +30,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
         headers: {'Content-Type': 'application/javascript'}
       }).send(payload);
     });
-  }
+  };
 
   this.load = function(version) {
     assert(version === 'draft' || version === 'live');
