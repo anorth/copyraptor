@@ -20,7 +20,7 @@ function EditorApp(injector, editable) {
   var apiBase = env.apiPath();
 
   var service = new CopyraptorService(apiBase,
-      injector.env.siteKey(), env.contentSrc);
+      injector.env.params().site, env.contentSrc);
 
   var me = this;
 

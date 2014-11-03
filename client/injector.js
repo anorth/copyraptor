@@ -7,16 +7,80 @@
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
   var initialChangesApplied = false;
+  var editorApp;
 
-  ///// Exported functions /////
+  var urlScheme = (document.location.protocol === 'https:') ? 'https://' : 'http://';
+
+  ///// Exports /////
+
+  var env = (function() {
+    var params = {site: undefined}, staticPath, serverPath, contentBlobHost, contentCdnHost, i;
+
+    // Find the script element that loaded this script to extract the site id
+    var tags = document.head.querySelectorAll("script");
+    for (i = 0; i < tags.length; ++i) {
+      var tag = tags[i];
+
+      if (tag.getAttribute("data-copyraptor-site") !== null) {
+        staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
+        for (i = 0; i < tag.attributes.length; ++i) {
+          var attr = tag.attributes[i];
+          if (attr.specified && attr.name.slice(0, 16) === 'data-copyraptor-') {
+            params[attr.name.slice(16)] = attr.value || true;
+          }
+        }
+        break;
+      }
+    }
+
+    if (params.site === "") {
+      params.site = document.location.host;
+    }
+    if (!!queryParam("copyraptor")) {
+      params.edit = true;
+    }
+
+    if (staticPath) {
+      var m = staticPath.match(new RegExp("http(s)?://([\\w:.]+).*"));
+      var staticHost = m[2];
+      if (staticHost.slice(0, 9) === 'localhost') {
+        serverPath = 'http://localhost:3000';
+        contentBlobHost = contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
+      } else {
+        serverPath = urlScheme + 'www.copyraptor.com';
+        contentBlobHost = 'com.copyraptor.content.s3-us-west-2.amazonaws.com';
+        contentCdnHost = 'content.copyraptor.com';
+      }
+
+      __webpack_require__.p = staticPath + '/';
+    }
+
+    log("Params: ", params);
+
+    return {
+      params: function() { return params; },
+      staticPath: function() { return staticPath; },
+      serverPath: function() { return serverPath; },
+      apiPath: function() { return serverPath + "/api"; },
+      contentBlobHost: function() { return contentBlobHost; },
+      contentCdnHost: function() { return contentCdnHost; },
+      // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
+      contentSrc: function(version) {
+        assert(version);
+        return urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
+            '/' + params.site + '/' + version;
+      }
+    };
+  })();
+
 
   function initialContent(content) {
     log("Initialising content", content);
     injectedContent = content;
-    for (var keyString in content.changes) {
+    foreach(content.changes, function(keyString) {
       var k = parseInt(keyString);
       if (k >= nextEditKey) { nextEditKey = k+1 }
-    }
+    });
     log("Initial content received, next edit key: " + nextEditKey);
   }
 
@@ -176,12 +240,16 @@
 
   /** Applies changes if both they and the DOM have loaded. */
   function applyInitialChanges() {
-    if (initialChangesApplied || injectedContent == undefined) { return; }
+    if (initialChangesApplied) { return; }
     log("Applying initial changes");
     initialChangesApplied = true;
 
     applyContent();
     watchDom();
+
+    if (env.params().edit) {
+      showEditor();
+    }
   }
 
   function applyContent() {
@@ -269,65 +337,17 @@
     return newArgs;
   }
 
-  // TODO(alex): Do this on demand from user interaction
-  var showEditorImmediately = !!queryParam("copyraptor");
-
-  var env = (function() {
-    var sitekey, staticPath, serverPath, contentBlobHost, contentCdnHost;
-
-    // Find the script element that loaded this script to extract the site id
-    var tags = document.head.querySelectorAll("script");
-    for (var i = 0; i < tags.length; ++i) {
-      var tag = tags[i];
-
-      // TODO(alex): Fallback to site from domain name
-      sitekey = tag.getAttribute("data-copyraptor-site");
-      if (sitekey !== undefined) {
-        staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
-        break;
-      }
-    }
-
-    if (staticPath) {
-      var m = staticPath.match(new RegExp("(http(s)?://)([\\w:.]+).*"));
-      var scheme = m[1];
-      var host = m[3];
-      if (host.slice(0, 9) === 'localhost') {
-        serverPath = 'http://localhost:3000';
-        contentBlobHost = contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
-      } else {
-        serverPath = scheme + 'www.copyraptor.com';
-        contentBlobHost = 'com.copyraptor.content.s3-us-west-2.amazonaws.com';
-        contentCdnHost = 'content.copyraptor.com';
-      }
-
-      __webpack_require__.p = staticPath + '/';
-    }
-
-    return {
-      siteKey: function() { return sitekey; },
-      staticPath: function() { return staticPath; },
-      serverPath: function() { return serverPath; },
-      apiPath: function() { return serverPath + "/api"; },
-      contentBlobHost: function() { return contentBlobHost; },
-      contentCdnHost: function() { return contentCdnHost; },
-      // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
-      contentSrc: function(version) { 
-        assert(version);
-        return scheme + (showEditorImmediately ? contentBlobHost : contentCdnHost) +
-            '/' + sitekey + '/' + version;
-      }
-    };
-  })();
 
   function showEditor() {
-    require.ensure(['./editor'], function(require) {
-      var EditorApp = require('./app');
-
-      var editing = !!queryParam("e");
-      var editorApp = new EditorApp(injector, editing);
-      editorApp.show();
-    });
+    if (!editorApp) {
+      require.ensure(['./editor'], function(require) {
+        var EditorApp = require('./app');
+        editorApp = new EditorApp(injector, true);
+        editorApp.show();
+      });
+    } else {
+      log("Editor already loaded");
+    }
   }
 
   // Hook into document
@@ -360,15 +380,26 @@
   document.addEventListener("DOMContentLoaded", function() {
     log("DOMContentLoaded");
     applyInitialChanges();
-
-    if (showEditorImmediately) {
-      showEditor();
-    }
   });
 
   // Insert a script element after this to load the content synchronously
-  if (env.siteKey() !== undefined) {
-    // NOTE(alex): appendChild-style DOM manipulation does not execute the script synchronously.
-    document.write('<script type="text/javascript" src="' + env.contentSrc('live') + '"></script>');
+  if (env.params().site !== undefined) {
+    if (env.params().async) {
+      var el = document.createElement("script");
+      el.setAttribute("type", "text/javascript");
+      el.setAttribute("src", env.contentSrc('live'));
+      document.head.appendChild(el);
+      el.onload = function() {
+        applyInitialChanges();
+      };
+      // There is sadly no way to to detect the 404 error if this content does not yet exist, so no trigger
+      // to display the editor.
+      window.setTimeout(function() {
+        showEditor();
+      }, 2000);
+    } else {
+      // appendChild-style DOM manipulation does not execute the script synchronously.
+      document.write('<script type="text/javascript" src="' + env.contentSrc('live') + '"></script>');
+    }
   }
 })();
