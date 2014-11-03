@@ -1,79 +1,15 @@
-(function() {
+module.exports = function createInjector(document, MutationObserver) {
   'use strict';
   var util = require('./common');
   var assert = util.assert;
+  var foreach = util.foreach;
+  var log = util.log;
+  var warn = util.warn;
 
   var injectedContent = emptyContent(); // Overwritten by initialContent
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
   var initialChangesApplied = false;
-  var editorApp;
-
-  var urlScheme = (document.location.protocol === 'https:') ? 'https://' : 'http://';
-
-  ///// Exports /////
-
-  var env = (function() {
-    var params = {site: undefined}, staticPath, serverPath, contentBlobHost, contentCdnHost, i;
-
-    // Find the script element that loaded this script to extract the site id
-    var tags = document.head.querySelectorAll("script");
-    for (i = 0; i < tags.length; ++i) {
-      var tag = tags[i];
-
-      if (tag.getAttribute("data-copyraptor-site") !== null) {
-        staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
-        console.log(staticPath);
-        for (i = 0; i < tag.attributes.length; ++i) {
-          var attr = tag.attributes[i];
-          if (attr.specified && attr.name.slice(0, 16) === 'data-copyraptor-') {
-            params[attr.name.slice(16)] = attr.value || true;
-          }
-        }
-        break;
-      }
-    }
-
-    if (params.site === "") {
-      params.site = document.location.host;
-    }
-    if (!!queryParam("copyraptor")) {
-      params.edit = true;
-    }
-
-    if (staticPath) {
-      var m = staticPath.match(new RegExp("http(s)?://([\\w:.]+).*"));
-      var staticHost = m[2];
-      if (staticHost.slice(0, 9) === 'localhost') {
-        serverPath = 'http://localhost:3000';
-        contentBlobHost = contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
-      } else {
-        serverPath = urlScheme + 'www.copyraptor.com';
-        contentBlobHost = 'com.copyraptor.content.s3-us-west-2.amazonaws.com';
-        contentCdnHost = 'content.copyraptor.com';
-      }
-
-      __webpack_require__.p = staticPath + '/';
-    }
-
-    log("Params: ", params);
-
-    return {
-      params: function() { return params; },
-      staticPath: function() { return staticPath; },
-      serverPath: function() { return serverPath; },
-      apiPath: function() { return serverPath + "/api"; },
-      contentBlobHost: function() { return contentBlobHost; },
-      contentCdnHost: function() { return contentCdnHost; },
-      // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
-      contentSrc: function(version) {
-        assert(version);
-        return urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
-            '/' + params.site + '/' + version;
-      }
-    };
-  })();
-
 
   function initialContent(content) {
     log("Initialising content", content);
@@ -140,13 +76,6 @@
     injectedContent = emptyContent();
   }
 
-  function queryParam(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-    var results = regex.exec(location.search);
-    return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
-  }
-
   ///// Private functions /////
 
   function emptyContent() {
@@ -202,14 +131,6 @@
     return el;
   }
 
-  function foreach(obj, fn) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        fn(key, obj[key]);
-      }
-    }
-  }
-
   function extractContent(elt) {
     // TODO(alex): More sophisticated content
     // TODO(alex): Strip meaningless whitespace from extracted content.
@@ -258,10 +179,6 @@
 
     applyContent();
     watchDom();
-
-    if (env.params().edit) {
-      showEditor();
-    }
   }
 
   function applyContent() {
@@ -335,88 +252,33 @@
     }
   }
 
-  function log() {
-    console.log.apply(console, logargs(arguments));
-  }
-  function warn() {
-    console.warn.apply(console, logargs(arguments));
-  }
-  function logargs(args) {
-    var newArgs = Array.prototype.slice.call(args, 0);
-    if (newArgs.length) {
-      newArgs[0] = "[Copyraptor] " + newArgs[0];
-    }
-    return newArgs;
+  function getContent() {
+    return injectedContent;
   }
 
-
-  function showEditor() {
-    if (!editorApp) {
-      require.ensure(['./editor'], function(require) {
-        var EditorApp = require('./app');
-        editorApp = new EditorApp(injector, true);
-        editorApp.show();
-      });
-    } else {
-      log("Editor already loaded");
-    }
+  function setContent(content) {
+    clear();
+    injectedContent = content;
+    applyContent();
   }
 
-  // Hook into document
-  var injector = module.exports = window.copyraptor = {
-    env: env,
+  // TODO(dan): Tighten this interface up, it's a bit complicated/ad-hoc
+  // and use function ctor class style.
+  return {
     initialContent: initialContent,
+    applyInitialChanges: applyInitialChanges,
     trackElement: trackElement,
     updateElement: updateElement,
     resetElement: resetElement,
     clear: clear,
 
-    showEditor: showEditor,
-
-    getContent: function() {
-      return injectedContent;
-    },
-    setContent: function(content) {
-      clear();
-      injectedContent = content;
-
-      if (initialChangesApplied) {
-        applyContent();
-      } else {
-        applyInitialChanges();
-      }
-    },
+    getContent: getContent,
+    setContent: setContent,
 
     getPayload: function() {
       assert(injectedContent, "initialContent is undefined, should never be the case");
 
-      return "copyraptor.initialContent(" + JSON.stringify(injector.getContent()) + ");";
+      return "copyraptor.initialContent(" + JSON.stringify(getContent()) + ");";
     }
   };
-  
-  document.addEventListener("DOMContentLoaded", function() {
-    log("DOMContentLoaded");
-    applyInitialChanges();
-  });
-
-  // Insert a script element after this to load the content synchronously
-  if (env.params().site !== undefined) {
-    if (env.params().async || (/loaded|complete|interactive/.test(document.readyState))) {
-      var el = document.createElement("script");
-      el.setAttribute("type", "text/javascript");
-      el.setAttribute("src", env.contentSrc('live'));
-      document.head.appendChild(el);
-      el.onload = function() {
-        applyInitialChanges();
-      };
-      // There is sadly no way to to detect the 404 error if this content does not yet exist, so no trigger
-      // to display the editor.
-      window.setTimeout(function() {
-        showEditor();
-      }, 2000);
-    } else {
-      // appendChild-style DOM manipulation does not execute the script synchronously.
-      document.write('<script type="text/javascript" src="' + env.contentSrc('live') + '"></script>');
-    }
-  }
-})();
+};

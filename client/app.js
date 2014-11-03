@@ -11,16 +11,17 @@ var Editor = require('./editor');
 var FocusRect = require('./focus-rect');
 
 module.exports = EditorApp;
-function EditorApp(injector, editable) {
+function EditorApp(injector, env, editable) {
   assert(injector);
+  assert(env);
+  assert(typeof editable == 'boolean');
   editable = !!editable;
 
-  var env = injector.env;
   var staticPath = env.staticPath();
   var apiBase = env.apiPath();
 
   var service = new CopyraptorService(apiBase,
-      injector.env.params().site, env.contentSrc);
+      env.params().site, env.contentSrc);
 
   var me = this;
 

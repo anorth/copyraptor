@@ -42,3 +42,33 @@ exports.loadCss = function(module) {
 };
 
 }
+exports.queryParam = function(name) {
+  name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+  var results = regex.exec(location.search);
+  return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
+};
+
+exports.foreach = function(obj, fn) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      fn(key, obj[key]);
+    }
+  }
+};
+
+exports.log = function() {
+  console.log.apply(console, logargs(arguments));
+}
+exports.warn = function() {
+  console.warn.apply(console, logargs(arguments));
+}
+
+function logargs(args) {
+  var newArgs = Array.prototype.slice.call(args, 0);
+  if (newArgs.length) {
+    newArgs[0] = "[Copyraptor] " + newArgs[0];
+  }
+  return newArgs;
+}
+

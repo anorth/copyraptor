@@ -1,5 +1,5 @@
 module.exports = {
-  entry: './injector.js',
+  entry: './bootstrap.js',
   output: {
     path: __dirname + '/build',
     filename: 'copyraptor.js',
