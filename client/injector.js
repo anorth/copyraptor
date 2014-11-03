@@ -23,6 +23,7 @@
 
       if (tag.getAttribute("data-copyraptor-site") !== null) {
         staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
+        console.log(staticPath);
         for (i = 0; i < tag.attributes.length; ++i) {
           var attr = tag.attributes[i];
           if (attr.specified && attr.name.slice(0, 16) === 'data-copyraptor-') {
@@ -123,11 +124,18 @@
     log("Clear");
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
-      if (!!elt) {
-        injectContent(elt, key, originalContent[key]);
-      } else {
+      if (!elt) {
+        // NOTE(dan): This shouldn't be an error on dynamic pages?
         warn("Can't find elt for original content for " + key + ", match " + spec.match);
+        return;
       }
+
+      if (!originalContent[key]) {
+        warn('No original content saved for key ' + key);
+        return;
+      }
+
+      injectContent(elt, key, originalContent[key]);
     });
     injectedContent = emptyContent();
   }
@@ -217,6 +225,10 @@
   }
 
   function injectContent(elt, key, content) {
+    assert(elt, 'no elt');
+    assert(key, 'no key');
+    assert(content, 'no content');
+
     if (elt.contentEditable == 'true') {
       log("Not clobbering content being edited");
       return;
@@ -367,7 +379,12 @@
     setContent: function(content) {
       clear();
       injectedContent = content;
-      applyContent();
+
+      if (initialChangesApplied) {
+        applyContent();
+      } else {
+        applyInitialChanges();
+      }
     },
 
     getPayload: function() {

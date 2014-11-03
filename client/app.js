@@ -50,6 +50,8 @@ function EditorApp(injector, editable) {
     removeNode(loadingMsg);
 
     init();
+  }).catch(function(err) {
+    console.error(err);
   });
 
   function init() {
