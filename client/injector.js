@@ -1,15 +1,21 @@
+var util = require('./common');
+var Matcher = require('./matcher');
+
+var assert = util.assert;
+var foreach = util.foreach;
+var log = util.log;
+var warn = util.warn;
+
 module.exports = function createInjector(document, MutationObserver) {
   'use strict';
-  var util = require('./common');
+
   var copyraptorkey = 'copyraptorkey';
-  var assert = util.assert;
-  var foreach = util.foreach;
-  var log = util.log;
-  var warn = util.warn;
 
   var injectedContent = emptyContent();
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
+
+  var matcher; // Document not yet ready.
 
   ///// Injected content state and application /////
 
@@ -26,6 +32,7 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Applies content to DOM and installs observer. */
   function applyContentAndWatchDom() {
+    matcher = new Matcher(document.body);
     doApplyContent();
     watchDom();
   }
@@ -47,7 +54,7 @@ module.exports = function createInjector(document, MutationObserver) {
   function revertContent() {
     log("Clear");
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = findElement(spec.match);
+      var elt = matcher.findElement(spec.match);
       if (!elt) {
         log("Can't find elt for original content for " + key + ", match " + spec.match);
         return;
@@ -78,13 +85,13 @@ module.exports = function createInjector(document, MutationObserver) {
     var key = elt[copyraptorkey];
     if (key !== undefined) {
       var content = extractElementContent(elt);
-      var match = matcherForElt(elt);
+      var m = matcher.matcherForElt(elt);
       if (contentAreEquivalent(content, originalContent[key])) {
         log("Element for " + key + " is in original state");
         delete injectedContent.changes[key];
       } else {
-        log("Storing new spec for key " + key, match, content);
-        injectedContent.changes[key] = {match: match, content: content};
+        log("Storing new spec for key " + key, m, content);
+        injectedContent.changes[key] = {match: m, content: content};
         // Re-inject the content we've saved so as to make any inconsistency immediately visible.
         injectContent(elt, key, content);
       }
@@ -111,7 +118,7 @@ module.exports = function createInjector(document, MutationObserver) {
 
   function doApplyContent() {
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = findElement(spec.match);
+      var elt = matcher.findElement(spec.match);
       if (elt) {
         log("Injecting content for key " + key, spec, elt);
         originalContent[key] = extractElementContent(elt);
@@ -130,52 +137,6 @@ module.exports = function createInjector(document, MutationObserver) {
     } else {
       return { html: elt.innerHTML };
     }
-  }
-
-  function matcherForElt(eltToMatch) {
-    var path = []; // Bottom up order
-    var ancestor = eltToMatch;
-    while (ancestor !== document.body && ancestor !== undefined) {
-      var siblingIndex = 0, sib = ancestor;
-      while ((sib = sib.previousSibling) !== null) {
-        if (sib.children /* Elements only */ !== undefined) { siblingIndex++; }
-      }
-
-      path.push({
-        "name": ancestor.nodeName,
-        "index": siblingIndex,
-        "id": ancestor.id || undefined,
-        "class": normalizeClass(ancestor.className)
-      });
-      // TODO(alex): include signature of existing content
-
-      ancestor = ancestor.parentElement;
-    }
-    return path;
-  }
-
-  function findElement(match) {
-    var found = traverseMatchFromTop(match, document.body);
-    // TODO(alex): Fall back to heuristics based on match path properties if not found.
-    return found;
-  }
-
-  // Traces a match from a top node, seeking matching leaf.
-  // Returns an element, or null.
-  function traverseMatchFromTop(match, top) {
-    var pathFromTop = match.slice();
-    pathFromTop.reverse();
-    var el = top, matchPart;
-    for (var level in pathFromTop) {
-      matchPart = pathFromTop[level];
-      if (el.children.length <= matchPart.index) { log("Index OOB", matchPart, el); el = null; break; }
-      var child = el.children[matchPart.index];
-      if (child.nodeName !== matchPart.name) { log("Mismatched name", matchPart, child); el = null; break; }
-      if (!!matchPart.id && child.id !== matchPart.id) { log("Mismatched id", matchPart, child); el = null; break; }
-      if (!!matchPart.class && normalizeClass(child.className) !== matchPart.class) { log("Mismatched id", matchPart, child); el = null; break; }
-      el = child;
-    }
-    return el;
   }
 
   function contentAreEquivalent(a, b) {
@@ -250,7 +211,7 @@ module.exports = function createInjector(document, MutationObserver) {
         // - Early failure of traversal based on path to candidate element
         // - Traverse injections in parallel to build set of matching elts
         foreach(injectedContent.changes, function(key, spec) {
-          var elt = findElement(spec.match);
+          var elt = matcher.findElement(spec.match);
           if (!!addedNodeSet[elt]) {
             injectContent(elt, key, spec.content);
           }
@@ -260,16 +221,6 @@ module.exports = function createInjector(document, MutationObserver) {
     });
 
     observe();
-  }
-
-  function normalizeClass(className) {
-    if (!!className) {
-      var parts = className.split(" ");
-      parts.sort();
-      return parts.join(" ");
-    } else {
-      return undefined;
-    }
   }
 
   // TODO(dan): Tighten this interface up, it's a bit complicated/ad-hoc
