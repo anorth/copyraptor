@@ -1,7 +1,19 @@
+
 .copyraptor-app  {
   @import 'reset';
 
-.main-panel {
+  font-size: medium;
+  line-height: 1.5em;
+  direction: ltr;
+  text-align: left;
+  font-family: "Calibri", "Arial", sans-serif;
+  color: black;
+  font-style: normal;
+  font-weight: normal;
+  text-decoration: none;
+  list-style-type: disc;
+
+  .main-panel {
   /* TODO: make it change in case want to edit very top of page */
   z-index: 10000000;
   position: fixed;
