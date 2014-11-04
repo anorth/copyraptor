@@ -1,17 +1,20 @@
 module.exports = function createInjector(document, MutationObserver) {
   'use strict';
   var util = require('./common');
+  var copyraptorkey = 'copyraptorkey';
   var assert = util.assert;
   var foreach = util.foreach;
   var log = util.log;
   var warn = util.warn;
 
-  var injectedContent = emptyContent(); // Overwritten by initialContent
+  var injectedContent = emptyContent();
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
-  var initialChangesApplied = false;
 
-  function initialContent(content) {
+  ///// Injected content state and application /////
+
+  /** Stores (but does not apply) content. */
+  function setContent(content) {
     log("Initialising content", content);
     injectedContent = content;
     foreach(content.changes, function(keyString) {
@@ -21,48 +24,32 @@ module.exports = function createInjector(document, MutationObserver) {
     log("Initial content received, next edit key: " + nextEditKey);
   }
 
-  function trackElement(elt) {
-    var key = elt.copyraptorkey = elt.copyraptorkey || nextEditKey++;
-    if (originalContent[key] === undefined) {
-      var content = extractContent(elt);
-      log("Remembering " + key, content);
-      originalContent[key] = content;
-    }
+  /** Applies content to DOM and installs observer. */
+  function applyContentAndWatchDom() {
+    doApplyContent();
+    watchDom();
   }
 
-  function updateElement(elt) {
-    var key = elt.copyraptorkey;
-    if (key !== undefined) {
-      var content = extractContent(elt);
-      var match = matcherForElt(elt);
-      if (contentAreEquivalent(content, originalContent[key])) {
-        log("Element for " + key + " is in original state");
-        delete injectedContent.changes[key];
-      } else {
-        log("Storing new spec for key " + key, match, content);
-        injectedContent.changes[key] = {match: match, content: content};
-        // Re-inject the content we've saved so as to make any inconsistency immediately visible.
-        injectContent(elt, key, content);
-      }
-    }
+  /** Returns the current injected content. */
+  function getContent() {
+    return injectedContent;
   }
 
-  function resetElement(elt) {
-    var key = elt.copyraptorkey;
-    if (key && originalContent[key] !== undefined) {
-      log("Resetting elt for " + key);
-      injectContent(elt, key, originalContent[key]);
-      delete injectedContent.changes[key];
-    }
+  /** Reverts changes, then applies the argument (or previously set) content. */
+  function applyContent(contentOrNull) {
+    var content = contentOrNull || injectContent;
+    revertContent();
+    setContent(content);
+    doApplyContent();
   }
 
-  function clear() {
+  /** Reverts all changes in DOM and sets content to no changes. */
+  function revertContent() {
     log("Clear");
     foreach(injectedContent.changes, function(key, spec) {
       var elt = findElement(spec.match);
       if (!elt) {
-        // NOTE(dan): This shouldn't be an error on dynamic pages?
-        warn("Can't find elt for original content for " + key + ", match " + spec.match);
+        log("Can't find elt for original content for " + key + ", match " + spec.match);
         return;
       }
 
@@ -76,12 +63,72 @@ module.exports = function createInjector(document, MutationObserver) {
     injectedContent = emptyContent();
   }
 
+  ///// Editor tracking and updates /////
+
+  function trackElement(elt) {
+    var key = elt[copyraptorkey] = elt[copyraptorkey] || nextEditKey++;
+    if (originalContent[key] === undefined) {
+      var content = extractElementContent(elt);
+      log("Remembering " + key, content);
+      originalContent[key] = content;
+    }
+  }
+
+  function updateElement(elt) {
+    var key = elt[copyraptorkey];
+    if (key !== undefined) {
+      var content = extractElementContent(elt);
+      var match = matcherForElt(elt);
+      if (contentAreEquivalent(content, originalContent[key])) {
+        log("Element for " + key + " is in original state");
+        delete injectedContent.changes[key];
+      } else {
+        log("Storing new spec for key " + key, match, content);
+        injectedContent.changes[key] = {match: match, content: content};
+        // Re-inject the content we've saved so as to make any inconsistency immediately visible.
+        injectContent(elt, key, content);
+      }
+    }
+  }
+
+  function revertElement(elt) {
+    var key = elt[copyraptorkey];
+    if (key && originalContent[key] !== undefined) {
+      log("Resetting elt for " + key);
+      injectContent(elt, key, originalContent[key]);
+      delete injectedContent.changes[key];
+    }
+  }
+
   ///// Private functions /////
 
   function emptyContent() {
     return {
       api: 1,
       changes: {} // indexed by key
+    }
+  }
+
+  function doApplyContent() {
+    foreach(injectedContent.changes, function(key, spec) {
+      var elt = findElement(spec.match);
+      if (elt) {
+        log("Injecting content for key " + key, spec, elt);
+        originalContent[key] = extractElementContent(elt);
+        injectContent(elt, key, spec.content);
+      } else {
+        log("No elt (yet) for key " + key, spec);
+      }
+    });
+  }
+
+  function extractElementContent(elt) {
+    // TODO(alex): More sophisticated content
+    // TODO(alex): Strip meaningless whitespace from extracted content.
+    if (elt.children.length == 0) {
+      return { text: elt.textContent };
+    } else {
+      return { html: elt.innerHTML };
     }
   }
 
@@ -131,16 +178,6 @@ module.exports = function createInjector(document, MutationObserver) {
     return el;
   }
 
-  function extractContent(elt) {
-    // TODO(alex): More sophisticated content
-    // TODO(alex): Strip meaningless whitespace from extracted content.
-    if (elt.children.length == 0) {
-      return { text: elt.textContent };
-    } else {
-      return { html: elt.innerHTML };
-    }
-  }
-
   function contentAreEquivalent(a, b) {
     return a !== undefined && b !== undefined && a.text === b.text && a.html === b.html;
   }
@@ -150,16 +187,18 @@ module.exports = function createInjector(document, MutationObserver) {
     assert(key, 'no key');
     assert(content, 'no content');
 
+    // BUG: write a test first. If this is in response to a dynamic change, forgetting to remember original content.
+
     if (elt.contentEditable == 'true') {
       log("Not clobbering content being edited");
       return;
     }
 
-    if (elt.copyraptorkey === undefined) {
-      elt.copyraptorkey = key;
-    } else if (elt.copyraptorkey !== key) {
-      warn("Element already has attached key " + elt.copyraptorkey, elt);
-      elt.copyraptorkey = key;
+    if (elt[copyraptorkey] === undefined) {
+      elt[copyraptorkey] = key;
+    } else if (elt[copyraptorkey] !== key) {
+      warn("Element already has attached key " + elt[copyraptorkey], elt);
+      elt[copyraptorkey] = key;
     }
 
     if (content.html) {
@@ -171,30 +210,11 @@ module.exports = function createInjector(document, MutationObserver) {
     }
   }
 
-  /** Applies changes if both they and the DOM have loaded. */
-  function applyInitialChanges() {
-    if (initialChangesApplied) { return; }
-    log("Applying initial changes");
-    initialChangesApplied = true;
-
-    applyContent();
-    watchDom();
-  }
-
-  function applyContent() {
-    foreach(injectedContent.changes, function(key, spec) {
-      var elt = findElement(spec.match);
-      if (elt) {
-        log("Injecting content for key " + key, spec, elt);
-        originalContent[key] = extractContent(elt);
-        injectContent(elt, key, spec.content);
-      } else {
-        log("No elt (yet) for key " + key, spec);
-      }
-    });
-  }
-
+  var isWatching = false;
   function watchDom() {
+    if (isWatching) { return; }
+    isWatching = true;
+
     var observer;
     function observe() {
       observer.observe(document.body, {
@@ -252,33 +272,25 @@ module.exports = function createInjector(document, MutationObserver) {
     }
   }
 
-  function getContent() {
-    return injectedContent;
-  }
-
-  function setContent(content) {
-    clear();
-    injectedContent = content;
-    applyContent();
-  }
-
   // TODO(dan): Tighten this interface up, it's a bit complicated/ad-hoc
   // and use function ctor class style.
   return {
-    initialContent: initialContent,
-    applyInitialChanges: applyInitialChanges,
+    // Bootstrap & content access
+    setContent: setContent,
+    applyContentAndWatchDom: applyContentAndWatchDom,
+    getContent: getContent,
+    applyContent: applyContent,
+
+    // Editing
     trackElement: trackElement,
     updateElement: updateElement,
-    resetElement: resetElement,
-    clear: clear,
+    revertElement: revertElement,
+    revertContent: revertContent,
 
-    getContent: getContent,
-    setContent: setContent,
 
-    getPayload: function() {
+    makePayload: function() {
       assert(injectedContent, "initialContent is undefined, should never be the case");
-
-      return "copyraptor.initialContent(" + JSON.stringify(getContent()) + ");";
+      return "copyraptor.setContent(" + JSON.stringify(getContent()) + ");";
     }
   };
 };

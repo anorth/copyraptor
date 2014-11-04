@@ -57,14 +57,12 @@ var env = {
   apiPath: function() { return serverPath + "/api"; },
   contentBlobHost: function() { return contentBlobHost; },
   contentCdnHost: function() { return contentCdnHost; },
-  // TODO(alex): use cookie/storage remembering whether editor ever shown, rather than just editing now
   contentSrc: function(version) {
     assert(version);
     return urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
         '/' + params.site + '/' + version;
   }
 };
-
 
 var editorApp;
 function showEditor() {
@@ -83,13 +81,13 @@ var injector = createInjector(document, MutationObserver);
 
 // Export to window
 window.copyraptor = {
-  initialContent: injector.initialContent,
+  setContent: injector.setContent,
   showEditor: showEditor
 };
 
 document.addEventListener("DOMContentLoaded", function() {
   log("DOMContentLoaded");
-  injector.applyInitialChanges();
+  injector.applyContentAndWatchDom();
 
   if (env.params().edit) {
     showEditor();
@@ -104,7 +102,7 @@ if (env.params().site !== undefined) {
     el.setAttribute("src", env.contentSrc('live'));
     document.head.appendChild(el);
     el.onload = function() {
-      injector.applyInitialChanges();
+      injector.applyContentAndWatchDom();
     };
     // There is sadly no way to to detect the 404 error if this content does not yet exist, so no trigger
     // to display the editor.

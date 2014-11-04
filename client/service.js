@@ -39,7 +39,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     return util.http('GET', src).send().then(function(resp) {
       var extracted = null;
       var copyraptor = {
-        initialContent: function(content) {
+        setContent: function(content) {
           extracted = content;
         }
       };
@@ -75,4 +75,4 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
       password: password
     }))
   }
-}
+};
