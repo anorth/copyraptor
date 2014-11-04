@@ -7,3 +7,4 @@ node_modules/
 admin-credentials.sh
 app-credentials.sh
 aws-credentials.sh
+chromeextension.zip
