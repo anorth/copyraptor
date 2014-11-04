@@ -285,12 +285,6 @@ module.exports = function createInjector(document, MutationObserver) {
     trackElement: trackElement,
     updateElement: updateElement,
     revertElement: revertElement,
-    revertContent: revertContent,
-
-
-    makePayload: function() {
-      assert(injectedContent, "initialContent is undefined, should never be the case");
-      return "copyraptor.setContent(" + JSON.stringify(getContent()) + ");";
-    }
+    revertContent: revertContent
   };
 };

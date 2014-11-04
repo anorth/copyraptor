@@ -8,8 +8,33 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
   assert(sitekey);
   assert(contentSrc instanceof Function);
 
-  this.save = function(payload, version) {
-    assert(payload);
+  function makePayload(content) {
+    assert(content, "Undefined content for payload");
+    return "copyraptor.setContent(" + JSON.stringify(content) + ");";
+  }
+
+  function extractPayload(str) {
+    var extracted = null;
+    var copyraptor = {
+      setContent: function(content) {
+        extracted = content;
+      }
+    };
+    try {
+      eval(str);
+    } catch (e) {
+      console.error("Failed to extract payload", e);
+    }
+    if (!extracted) {
+      console.error('Nothing extracted from ' + str);
+      extracted = null;
+    }
+
+    return extracted;
+  }
+
+  this.save = function(content, version) {
+    var payload = makePayload(content);
 
     // Could maybe do per-user or whatever fancy versions later.
     assert(version === 'draft' || version === 'live');
@@ -37,25 +62,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     var src = contentSrc(version);
 
     return util.http('GET', src).send().then(function(resp) {
-      var extracted = null;
-      var copyraptor = {
-        setContent: function(content) {
-          extracted = content;
-        }
-      };
-      try {
-        eval(resp.responseText);
-      } catch (e) {
-        console.error(e);
-        return null;
-      }
-
-      if (!extracted) {
-        console.error('nothing extracted');
-        return null;
-      }
-
-      return extracted;
+      return extractPayload(resp.responseText);
     })
     .catch(function(err) {
       console.error(err);

@@ -129,7 +129,7 @@ function EditorApp(injector, env, editable) {
   );
 
   function save(version) {
-    return service.save(injector.makePayload(), version)
+    return service.save(injector.getContent(), version)
       .then(function() {
         noUnsavedChanges();
       })
