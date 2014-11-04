@@ -1,9 +1,9 @@
 .copyraptor-app  {
-  z-index: 10000000;
   @import 'reset';
 
 .main-panel {
   /* TODO: make it change in case want to edit very top of page */
+  z-index: 10000000;
   position: fixed;
   top: 0;
   left: 0;
