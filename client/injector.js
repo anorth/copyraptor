@@ -160,9 +160,9 @@ module.exports = function createInjector(document, MutationObserver) {
       elt[copyraptorkey] = key;
     }
 
-    if (content.html) {
+    if (content.html != undefined) {
       elt.innerHTML = content.html;
-    } else if (content.text) {
+    } else if (content.text !== undefined) {
       elt.textContent = content.text;
     } else {
       console.error("Unknown content type", content);
@@ -204,7 +204,7 @@ module.exports = function createInjector(document, MutationObserver) {
         //};
         var addedNodeSet = {};
         var anyAddedNodes = false;
-        for (var i in mutation.addedNodes) {
+        for (var i = 0; i < mutation.addedNodes.length; ++i) {
           addedNodeSet[mutation.addedNodes[i]] = 1;
           anyAddedNodes = true;
         }

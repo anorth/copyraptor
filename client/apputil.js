@@ -137,7 +137,7 @@ exports.applyItems = function(elem, items) {
 
     if (item.elem) {
       item = item.elem;
-      assert(item instanceof Element);
+      assert(item.nodeType === 1);
     }
 
     elem.appendChild(item);
@@ -195,7 +195,7 @@ exports.descendantMatches = function(elem, predicate) {
     }
 
     if (node.nodeType == 1) {
-      var matches = descendantMatches(node, predicate);
+      matches = descendantMatches(node, predicate);
       if (matches) {
         return true;
       }

@@ -1,6 +1,10 @@
 var util = require('./apputil');
 var CopyraptorService = require('./service.js');
 
+// TODO(alex): More from http://www.quackit.com/html/tags/ or http://www.w3.org/TR/html51/
+var NON_EDITABLE_TAGS = ['IMG'];
+var EDITABLE_DISPLAY_VALUES = ['block', 'inline-block', 'list-item', 'table-cell', 'table-caption'];
+
 // TODO(dan): Kill this with() block.
 with(util) { (function() {
 
@@ -136,7 +140,6 @@ function EditorApp(injector, env, editable) {
       .catch(function(resp) {
         if (resp.status == 401) { // unauthorised
           util.addClass(login, 'visible');
-          return;
         }
       });
   }
@@ -231,8 +234,7 @@ function EditorApp(injector, env, editable) {
   }
 
   function leaveElem(ev) {
-    var elem = ev.target;
-
+    //var elem = ev.target;
     //if (elem != focusRect.wrapped) {
     //  return;
     //}
@@ -271,13 +273,14 @@ function EditorApp(injector, env, editable) {
   }
 
   function isIntrinsicallySuitable(node) {
-    if (node.nodeType !== 1) {
+    if (node.nodeType !== 1) { // ELEMENT_NODE
       return;
     }
 
-    var display = util.displayType(node);
+    var displayIsSuitable = EDITABLE_DISPLAY_VALUES.indexOf(util.displayType(node)) != -1;
+    var tagNameIsSuitable = NON_EDITABLE_TAGS.indexOf(node.tagName) == -1;
 
-    return display == 'block' || display == 'inline-block';
+    return displayIsSuitable && tagNameIsSuitable;
   }
 
   /**

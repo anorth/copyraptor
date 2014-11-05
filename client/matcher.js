@@ -57,7 +57,7 @@ function traverseMatchFromTop(match, top) {
   var pathFromTop = match.slice();
   pathFromTop.reverse();
   var el = top, matchPart;
-  for (var level in pathFromTop) {
+  for (var level = 0; level < pathFromTop.length; ++level) {
     matchPart = pathFromTop[level];
     if (el.children.length <= matchPart.index) {
       //log("Index OOB", matchPart, el);
