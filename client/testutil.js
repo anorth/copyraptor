@@ -27,5 +27,12 @@ module.exports = {
             done(err);
           })
     };
+  },
+
+  // TODO: Either flesh this out, or find an implementation
+  // Unfortunately jsdom doesn't support it - could use phantomjs, if not too bulky.
+  FakeMutationObserver: function () {
+    this.disconnect = function () {};
+    this.observe = function () {};
   }
 };
