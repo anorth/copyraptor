@@ -4,19 +4,29 @@ var util = require('./testutil');
 var Matcher = require('./matcher');
 
 
-describe('Path matcher tests', function () {
+describe('Matcher tests', function () {
+
+  var dom;
+  var document, body, matcher;
 
   beforeEach(function () {
     this.addMatchers(customMatchers);
+    dom = util.dom('<body></body>')
+        .then(function(window) {
+          document = window.document;
+          body = document.body;
+          matcher = new Matcher(body);
+          return window;
+        });
   });
 
   afterEach(function () {
+    dom = null;
   });
 
   it('should match a single level path', util.promised(function () {
-    return util.dom('<body><div></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div></div>';
       var el = body.children[0];
       var m = matcher.matcherForElt(el);
 
@@ -26,9 +36,8 @@ describe('Path matcher tests', function () {
   }));
 
   it('should match a nth child', util.promised(function () {
-    return util.dom('<body><div></div><div></div><div></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div></div><div></div><div></div>';
       var el, em;
       for (var i = 0; i < 3; ++i) {
         el = body.children[i];
@@ -40,9 +49,8 @@ describe('Path matcher tests', function () {
   }));
 
   it('should match deeply', util.promised(function () {
-    return util.dom('<body><div><p><span></span></p></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div><p><span></span></p></div>';
       var p = body.children[0].children[0];
       var span = p.children[0];
 
@@ -57,9 +65,8 @@ describe('Path matcher tests', function () {
   }));
 
   it('should record elements ids', util.promised(function () {
-    return util.dom('<body><div id="a"></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div id="a"></div>';
       var el = body.children[0];
       var m = matcher.matcherForElt(el);
 
@@ -69,9 +76,8 @@ describe('Path matcher tests', function () {
   }));
 
   it('should record elements classes', util.promised(function () {
-    return util.dom('<body><div class="a b"><div class="b a"/></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="a b"><div class="b a"/></div>';
       var el = body.children[0].children[0];
       var m = matcher.matcherForElt(el);
 
@@ -80,22 +86,11 @@ describe('Path matcher tests', function () {
       expect(matcher.findElement(m)).toBe(el);
     });
   }));
-});
 
-
-describe('Mismatch and heuristic tests', function () {
-
-  beforeEach(function () {
-    this.addMatchers(customMatchers);
-  });
-
-  afterEach(function () {
-  });
 
   it('should reject missing, unexpected and mismatched ids', util.promised(function () {
-    return util.dom('<body><div id="1"></div><div></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<div id="1"></div><div></div>';
 
       var el1 = body.children[0];
       var m1 = matcher.matcherForElt(el1);
@@ -111,9 +106,8 @@ describe('Mismatch and heuristic tests', function () {
   }));
 
   it('should reject missing, unexpected and mismatched classes', util.promised(function () {
-    return util.dom('<body><div class="a"></div><div class="b c"></div><div></div></body>').then(function (wnd) {
-      var body = wnd.document.body;
-      var matcher = new Matcher(body);
+    return dom.then(function(window) {
+      body.innerHTML = '<body><div class="a"></div><div class="b c"></div><div></div></body>';
 
       var el1 = body.children[0];
       var m1 = matcher.matcherForElt(el1);
@@ -134,6 +128,7 @@ describe('Mismatch and heuristic tests', function () {
       el3.className = ''; expect(matcher.findElement(m3)).toBe(el3);
     });
   }));
+
 });
 
 

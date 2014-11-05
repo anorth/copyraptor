@@ -121,7 +121,7 @@ module.exports = function createInjector(document, MutationObserver) {
     foreach(injectedContent.changes, function(key, spec) {
       var elt = matcher.findElement(spec.match);
       if (elt) {
-        log("Injecting content for key " + key, spec, elt);
+        log("Injecting content for key " + key, spec /*, elt*/);
         originalContent[key] = extractElementContent(elt);
         injectContent(elt, key, spec.content);
       } else {
@@ -237,6 +237,9 @@ module.exports = function createInjector(document, MutationObserver) {
     trackElement: trackElement,
     updateElement: updateElement,
     revertElement: revertElement,
-    revertContent: revertContent
+    revertContent: revertContent,
+
+    // Visible for testing
+    matcher: matcher
   };
 };

@@ -60,23 +60,23 @@ function traverseMatchFromTop(match, top) {
   for (var level in pathFromTop) {
     matchPart = pathFromTop[level];
     if (el.children.length <= matchPart.index) {
-      log("Index OOB", matchPart, el);
+      //log("Index OOB", matchPart, el);
       el = null;
       break;
     }
     var child = el.children[matchPart.index];
     if (child.nodeName !== matchPart.name) {
-      log("Mismatched name", matchPart, child);
+      //log("Mismatched name", matchPart, child);
       el = null;
       break;
     }
     if ((matchPart.id || child.id) && child.id !== matchPart.id) {
-      log("Mismatched id", matchPart, child);
+      //log("Mismatched id", matchPart, child);
       el = null;
       break;
     }
     if ((matchPart.class || child.className) && normalizeClass(child.className) !== matchPart.class) {
-      log("Mismatched id", matchPart, child);
+      //log("Mismatched id", matchPart, child);
       el = null;
       break;
     }
