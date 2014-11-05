@@ -12,6 +12,10 @@ var warn = util.warn;
 module.exports = function Matcher(bodyElt) {
   var me = this;
 
+  /**
+   * Builds a matcher specifying the path from an element up to the body. The result is an array of
+   * objects describing each level, bottom-up.
+   */
   me.matcherForElt = function(eltToMatch) {
     var path = []; // Bottom up order
     var ancestor = eltToMatch;
@@ -36,6 +40,9 @@ module.exports = function Matcher(bodyElt) {
     return path;
   };
 
+  /**
+   * Finds the element matching a path built by matcherForElt under the body.
+   */
   me.findElement = function(match) {
     // TODO(alex): Fall back to heuristics based on match path properties if not found.
     return traverseMatchFromTop(match, bodyElt);
