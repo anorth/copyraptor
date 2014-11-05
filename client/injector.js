@@ -32,7 +32,6 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Applies content to DOM and installs observer. */
   function applyContentAndWatchDom() {
-    matcher = new Matcher(document.body);
     doApplyContent();
     watchDom();
   }
@@ -44,7 +43,7 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Reverts changes, then applies the argument (or previously set) content. */
   function applyContent(contentOrNull) {
-    var content = contentOrNull || injectContent;
+    var content = contentOrNull || injectedContent;
     revertContent();
     setContent(content);
     doApplyContent();
@@ -52,7 +51,8 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Reverts all changes in DOM and sets content to no changes. */
   function revertContent() {
-    log("Clear");
+    if (!matcher) { return; } // Not yet applied
+    log("Revert");
     foreach(injectedContent.changes, function(key, spec) {
       var elt = matcher.findElement(spec.match);
       if (!elt) {
@@ -117,6 +117,7 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   function doApplyContent() {
+    if (!matcher) { matcher = new Matcher(document.body); }
     foreach(injectedContent.changes, function(key, spec) {
       var elt = matcher.findElement(spec.match);
       if (elt) {

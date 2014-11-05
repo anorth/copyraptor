@@ -4,7 +4,7 @@ var util = require('./testutil');
 var Matcher = require('./matcher');
 
 
-describe('Matcher tests', function () {
+describe('Path matcher tests', function () {
 
   beforeEach(function () {
     this.addMatchers(customMatchers);
@@ -17,19 +17,25 @@ describe('Matcher tests', function () {
     return util.dom('<body><div></div></body>').then(function (wnd) {
       var body = wnd.document.body;
       var matcher = new Matcher(body);
-      var m = matcher.matcherForElt(body.children[0]);
+      var el = body.children[0];
+      var m = matcher.matcherForElt(el);
 
       expect(m).toHavePath('DIV', 0);
+      expect(matcher.findElement(m)).toBe(el);
     });
   }));
 
-  it('should match a second child', util.promised(function () {
-    return util.dom('<body><div></div><div></div></body>').then(function (wnd) {
+  it('should match a nth child', util.promised(function () {
+    return util.dom('<body><div></div><div></div><div></div></body>').then(function (wnd) {
       var body = wnd.document.body;
       var matcher = new Matcher(body);
-      var m = matcher.matcherForElt(body.children[1]);
-
-      expect(m).toHavePath('DIV', 1);
+      var el, em;
+      for (var i = 0; i < 3; ++i) {
+        el = body.children[i];
+        m = matcher.matcherForElt(el);
+        expect(m).toHavePath('DIV', i);
+        expect(matcher.findElement(m)).toBe(el);
+      }
     });
   }));
 
@@ -37,9 +43,16 @@ describe('Matcher tests', function () {
     return util.dom('<body><div><p><span></span></p></div></body>').then(function (wnd) {
       var body = wnd.document.body;
       var matcher = new Matcher(body);
-      var m = matcher.matcherForElt(body.children[0].children[0].children[0]);
+      var p = body.children[0].children[0];
+      var span = p.children[0];
 
+      var m = matcher.matcherForElt(p);
+      expect(m).toHavePath('P', 0, 'DIV', 0);
+      expect(matcher.findElement(m)).toBe(p);
+
+      m = matcher.matcherForElt(span);
       expect(m).toHavePath('SPAN', 0, 'P', 0, 'DIV', 0);
+      expect(matcher.findElement(m)).toBe(span);
     });
   }));
 
@@ -47,23 +60,82 @@ describe('Matcher tests', function () {
     return util.dom('<body><div id="a"></div></body>').then(function (wnd) {
       var body = wnd.document.body;
       var matcher = new Matcher(body);
-      var m = matcher.matcherForElt(body.children[0]);
+      var el = body.children[0];
+      var m = matcher.matcherForElt(el);
 
       expect(m[0]).toContainValues({'id': 'a'});
+      expect(matcher.findElement(m)).toBe(el);
     });
   }));
 
   it('should record elements classes', util.promised(function () {
-    return util.dom('<body><div class="a b"><div class="b a"></div></body>').then(function (wnd) {
+    return util.dom('<body><div class="a b"><div class="b a"/></div></body>').then(function (wnd) {
       var body = wnd.document.body;
       var matcher = new Matcher(body);
-      var m = matcher.matcherForElt(body.children[0].children[0]);
+      var el = body.children[0].children[0];
+      var m = matcher.matcherForElt(el);
 
       expect(m[0]).toContainValues({'class': 'a b'});
       expect(m[1]).toContainValues({'class': 'a b'});
+      expect(matcher.findElement(m)).toBe(el);
     });
   }));
 });
+
+
+describe('Mismatch and heuristic tests', function () {
+
+  beforeEach(function () {
+    this.addMatchers(customMatchers);
+  });
+
+  afterEach(function () {
+  });
+
+  it('should reject missing, unexpected and mismatched ids', util.promised(function () {
+    return util.dom('<body><div id="1"></div><div></div></body>').then(function (wnd) {
+      var body = wnd.document.body;
+      var matcher = new Matcher(body);
+
+      var el1 = body.children[0];
+      var m1 = matcher.matcherForElt(el1);
+      el1.id = ''; expect(matcher.findElement(m1)).toBeNull();
+      el1.id = 'b'; expect(matcher.findElement(m1)).toBeNull();
+      el1.id = '1'; expect(matcher.findElement(m1)).toBe(el1);
+
+      var el2 = body.children[1];
+      var m2 = matcher.matcherForElt(el2);
+      el2.id = 'a'; expect(matcher.findElement(m2)).toBeNull();
+      el2.id = ''; expect(matcher.findElement(m2)).toBe(el2);
+    });
+  }));
+
+  it('should reject missing, unexpected and mismatched classes', util.promised(function () {
+    return util.dom('<body><div class="a"></div><div class="b c"></div><div></div></body>').then(function (wnd) {
+      var body = wnd.document.body;
+      var matcher = new Matcher(body);
+
+      var el1 = body.children[0];
+      var m1 = matcher.matcherForElt(el1);
+      el1.className = ''; expect(matcher.findElement(m1)).toBeNull();
+      el1.className = 'b'; expect(matcher.findElement(m1)).toBeNull();
+      el1.className = 'b c'; expect(matcher.findElement(m1)).toBeNull();
+      el1.className = 'a'; expect(matcher.findElement(m1)).toBe(el1);
+
+      var el2 = body.children[1];
+      var m2 = matcher.matcherForElt(el2);
+      el2.className = 'b'; expect(matcher.findElement(m2)).toBeNull();
+      el2.className = 'c'; expect(matcher.findElement(m2)).toBeNull();
+      el2.className = 'c b'; expect(matcher.findElement(m2)).toBe(el2);
+
+      var el3 = body.children[2];
+      var m3 = matcher.matcherForElt(el3);
+      el3.className = 'a'; expect(matcher.findElement(m3)).toBeNull();
+      el3.className = ''; expect(matcher.findElement(m3)).toBe(el3);
+    });
+  }));
+});
+
 
 var customMatchers = {
   toBeArray: function (expected) {

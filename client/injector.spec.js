@@ -1,31 +1,25 @@
 var jsdom = require('jsdom');
-var fs = require('fs');
 var util = require('./testutil');
 var createInjector = require('./injector');
 
-var testFile1 = fs.readFileSync('testdata/test1.html', 'utf8');
-
-
 describe('injector', function() {
   it('should inject something', util.promised(function() {
-    return util.dom(testFile1, function(wnd) {
+    return util.dom('<body><h1></h1><p>Initial</p></body>', function(wnd) {
       var body = wnd.document.body;
-
       injector = createInjector(wnd.document, util.FakeMutationObserver);
-      injector.setContent({
-          "api":1,
-          "changes":{
-            "1":{
-              "match":[{"name":"P","index":1}],
-              "content":{"text":"Replaced Content Yay"}
-            }
+      expect(body.innerHTML).toMatch(/<p>Initial<\/p>/);
+
+      injector.applyContent({
+        "api": 1,
+        "changes": {
+          "1": {
+            "match": [{"name": "P", "index": 1}],
+            "content": {"text": "Replaced"}
           }
-        });
+        }
+      });
 
-      expect(body.innerHTML).toMatch(/<p>My initial content<\/p>/);
-      injector.applyContentAndWatchDom();
-      expect(body.innerHTML).toMatch(/<p>Replaced Content Yay<\/p>/);
-
+      expect(body.innerHTML).toMatch(/<p>Replaced<\/p>/);
     })
   }));
 });

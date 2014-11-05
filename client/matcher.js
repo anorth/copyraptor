@@ -70,12 +70,12 @@ function traverseMatchFromTop(match, top) {
       el = null;
       break;
     }
-    if (!!matchPart.id && child.id !== matchPart.id) {
+    if ((matchPart.id || child.id) && child.id !== matchPart.id) {
       log("Mismatched id", matchPart, child);
       el = null;
       break;
     }
-    if (!!matchPart.class && normalizeClass(child.className) !== matchPart.class) {
+    if ((matchPart.class || child.className) && normalizeClass(child.className) !== matchPart.class) {
       log("Mismatched id", matchPart, child);
       el = null;
       break;
