@@ -1,6 +1,5 @@
 var jsdom = require('jsdom');
 var util = require('./testutil');
-var Matcher = require('./matcher');
 var createInjector = require('./injector');
 
 describe('Injection tests', function() {
@@ -15,7 +14,7 @@ describe('Injection tests', function() {
           document = window.document;
           body = document.body;
           injector = createInjector(document, util.FakeMutationObserver);
-          matcher = new Matcher(body);
+          matcher = injector.matcher();
           return window;
         });
   });

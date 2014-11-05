@@ -15,8 +15,6 @@ module.exports = function createInjector(document, MutationObserver) {
   var nextEditKey = 1;
   var originalContent = {}; // Content before overwriting
 
-  var matcher; // Document not yet ready.
-
   ///// Injected content state and application /////
 
   /** Stores (but does not apply) content. */
@@ -51,10 +49,10 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Reverts all changes in DOM and sets content to no changes. */
   function revertContent() {
-    if (!matcher) { return; } // Not yet applied
+    if (!matcher()) { return; } // Not yet applied
     log("Revert");
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = matcher.findElement(spec.match);
+      var elt = matcher().findElement(spec.match);
       if (!elt) {
         log("Can't find elt for original content for " + key + ", match " + spec.match);
         return;
@@ -85,7 +83,7 @@ module.exports = function createInjector(document, MutationObserver) {
     var key = elt[copyraptorkey];
     if (key !== undefined) {
       var content = extractElementContent(elt);
-      var m = matcher.matcherForElt(elt);
+      var m = matcher().matcherForElt(elt);
       if (contentAreEquivalent(content, originalContent[key])) {
         log("Element for " + key + " is in original state");
         delete injectedContent.changes[key];
@@ -117,9 +115,8 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   function doApplyContent() {
-    if (!matcher) { matcher = new Matcher(document.body); }
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = matcher.findElement(spec.match);
+      var elt = matcher().findElement(spec.match);
       if (elt) {
         log("Injecting content for key " + key, spec /*, elt*/);
         originalContent[key] = extractElementContent(elt);
@@ -172,6 +169,12 @@ module.exports = function createInjector(document, MutationObserver) {
     }
   }
 
+  var _matcher; // Document not yet ready.
+  function matcher() {
+    if (!_matcher && document.body) { _matcher = new Matcher(document.body); }
+    return _matcher;
+  }
+
   var isWatching = false;
   function watchDom() {
     if (isWatching) { return; }
@@ -212,7 +215,7 @@ module.exports = function createInjector(document, MutationObserver) {
         // - Early failure of traversal based on path to candidate element
         // - Traverse injections in parallel to build set of matching elts
         foreach(injectedContent.changes, function(key, spec) {
-          var elt = matcher.findElement(spec.match);
+          var elt = matcher().findElement(spec.match);
           if (!!addedNodeSet[elt]) {
             injectContent(elt, key, spec.content);
           }

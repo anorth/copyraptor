@@ -104,31 +104,6 @@ describe('Matcher tests', function () {
       el2.id = ''; expect(matcher.findElement(m2)).toBe(el2);
     });
   }));
-
-  it('should reject missing, unexpected and mismatched classes', util.promised(function () {
-    return dom.then(function(window) {
-      body.innerHTML = '<body><div class="a"></div><div class="b c"></div><div></div></body>';
-
-      var el1 = body.children[0];
-      var m1 = matcher.matcherForElt(el1);
-      el1.className = ''; expect(matcher.findElement(m1)).toBeNull();
-      el1.className = 'b'; expect(matcher.findElement(m1)).toBeNull();
-      el1.className = 'b c'; expect(matcher.findElement(m1)).toBeNull();
-      el1.className = 'a'; expect(matcher.findElement(m1)).toBe(el1);
-
-      var el2 = body.children[1];
-      var m2 = matcher.matcherForElt(el2);
-      el2.className = 'b'; expect(matcher.findElement(m2)).toBeNull();
-      el2.className = 'c'; expect(matcher.findElement(m2)).toBeNull();
-      el2.className = 'c b'; expect(matcher.findElement(m2)).toBe(el2);
-
-      var el3 = body.children[2];
-      var m3 = matcher.matcherForElt(el3);
-      el3.className = 'a'; expect(matcher.findElement(m3)).toBeNull();
-      el3.className = ''; expect(matcher.findElement(m3)).toBe(el3);
-    });
-  }));
-
 });
 
 

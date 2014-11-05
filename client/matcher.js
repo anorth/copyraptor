@@ -75,11 +75,12 @@ function traverseMatchFromTop(match, top) {
       el = null;
       break;
     }
-    if ((matchPart.class || child.className) && normalizeClass(child.className) !== matchPart.class) {
-      //log("Mismatched id", matchPart, child);
-      el = null;
-      break;
-    }
+    // NOTE(alex): Filtering on classes isn't appropriate as dynamic pages often change them, e.g. tab.active.
+    //if ((matchPart.class || child.className) && normalizeClass(child.className) !== matchPart.class) {
+    //  //log("Mismatched class", matchPart, child);
+    //  el = null;
+    //  break;
+    //}
     el = child;
   }
   return el;
