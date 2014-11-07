@@ -6,14 +6,16 @@ var foreach = util.foreach;
 var log = util.log;
 var warn = util.warn;
 
+var CRAPTOR = 'copyraptor';
+var CR_KEY = 'editkey';
+var CR_ORIG = 'original';
+
+
 module.exports = function createInjector(document, MutationObserver) {
   'use strict';
 
-  var copyraptorkey = 'copyraptorkey';
-
   var injectedContent = emptyContent();
   var nextEditKey = 1;
-  var originalContent = {}; // Content before overwriting
 
   ///// Injected content state and application /////
 
@@ -51,56 +53,53 @@ module.exports = function createInjector(document, MutationObserver) {
   function revertContent() {
     if (!matcher()) { return; } // Not yet applied
     log("Revert");
-    foreach(injectedContent.changes, function(key, spec) {
-      var elt = matcher().findElement(spec.match);
-      if (!elt) {
-        log("Can't find elt for original content for " + key + ", match " + spec.match);
-        return;
+    util.traverseDom(document.body, function(node) {
+      if (node.nodeType == 1 && node[CRAPTOR]) {
+        injectContent(node, node[CRAPTOR][CR_KEY], node[CRAPTOR][CR_ORIG]);
+        return true;
       }
-
-      if (!originalContent[key]) {
-        warn('No original content saved for key ' + key);
-        return;
-      }
-
-      injectContent(elt, key, originalContent[key]);
     });
+
     injectedContent = emptyContent();
   }
 
   ///// Editor tracking and updates /////
 
   function trackElement(elt) {
-    var key = elt[copyraptorkey] = elt[copyraptorkey] || nextEditKey++;
-    if (originalContent[key] === undefined) {
+    if (!elt[CRAPTOR]) {
+      elt[CRAPTOR] = {};
+      elt[CRAPTOR][CR_KEY] = nextEditKey++;
+
       var content = extractElementContent(elt);
-      log("Remembering " + key, content);
-      originalContent[key] = content;
+      log("Remembering " + elt[CRAPTOR][CR_KEY], content);
+      elt[CRAPTOR][CR_ORIG] = content;
     }
   }
 
   function updateElement(elt) {
-    var key = elt[copyraptorkey];
-    if (key !== undefined) {
-      var content = extractElementContent(elt);
-      var m = matcher().matcherForElt(elt);
-      if (contentAreEquivalent(content, originalContent[key])) {
-        log("Element for " + key + " is in original state");
-        delete injectedContent.changes[key];
-      } else {
-        log("Storing new spec for key " + key, m, content);
-        injectedContent.changes[key] = {match: m, content: content};
-        // Re-inject the content we've saved so as to make any inconsistency immediately visible.
-        injectContent(elt, key, content);
-      }
+    var craptor = elt[CRAPTOR];
+    assert(craptor, "Update to un-tracked elt");
+
+    var key = craptor[CR_KEY];
+    var content = extractElementContent(elt);
+    var m = matcher().matcherForElt(elt);
+    if (contentAreEquivalent(content, craptor[CR_ORIG])) {
+      log("Element for " + key + " is in original state");
+      delete injectedContent.changes[key];
+    } else {
+      log("Storing new spec for key " + key, m, content);
+      injectedContent.changes[key] = {match: m, content: content};
+      // Re-inject the content we've saved so as to make any inconsistency immediately visible.
+      injectContent(elt, key, content);
     }
   }
 
   function revertElement(elt) {
-    var key = elt[copyraptorkey];
-    if (key && originalContent[key] !== undefined) {
+    var craptor = elt[CRAPTOR];
+    if (craptor) {
+      var key = craptor[CR_KEY];
       log("Resetting elt for " + key);
-      injectContent(elt, key, originalContent[key]);
+      injectContent(elt, key, craptor[CR_ORIG]);
       delete injectedContent.changes[key];
     }
   }
@@ -118,8 +117,7 @@ module.exports = function createInjector(document, MutationObserver) {
     foreach(injectedContent.changes, function(key, spec) {
       var elt = matcher().findElement(spec.match);
       if (elt) {
-        log("Injecting content for key " + key, spec /*, elt*/);
-        originalContent[key] = extractElementContent(elt);
+        log("Injecting new content for key " + key, spec /*, elt*/);
         injectContent(elt, key, spec.content);
       } else {
         log("No elt (yet) for key " + key, spec);
@@ -153,11 +151,13 @@ module.exports = function createInjector(document, MutationObserver) {
       return;
     }
 
-    if (elt[copyraptorkey] === undefined) {
-      elt[copyraptorkey] = key;
-    } else if (elt[copyraptorkey] !== key) {
-      warn("Element already has attached key " + elt[copyraptorkey], elt);
-      elt[copyraptorkey] = key;
+    if (!elt[CRAPTOR]) {
+      elt[CRAPTOR] = {};
+      elt[CRAPTOR][CR_KEY] = key;
+      elt[CRAPTOR][CR_ORIG] = extractElementContent(elt);
+    } else if (elt[CRAPTOR][CR_KEY] !== key) {
+      warn("Element already has attached key " + elt[CRAPTOR][CR_KEY], elt);
+      elt[CRAPTOR][CR_KEY] = key;
     }
 
     if (content.html != undefined) {

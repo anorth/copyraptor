@@ -57,6 +57,18 @@ exports.foreach = function(obj, fn) {
   }
 };
 
+/** Traverses DOM depth-first. Doesn't descend if fn returns truthy. */
+exports.traverseDom = function traverseDom(node, fn) {
+  var stop = fn(node);
+  if (!stop) {
+    node = node.firstChild;
+    while (node) {
+      traverseDom(node, fn);
+      node = node.nextSibling;
+    }
+  }
+};
+
 exports.log = function() {
   console.log.apply(console, logargs(arguments));
 }
