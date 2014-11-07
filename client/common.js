@@ -71,10 +71,10 @@ exports.traverseDom = function traverseDom(node, fn) {
 
 exports.log = function() {
   console.log.apply(console, logargs(arguments));
-}
+};
 exports.warn = function() {
   console.warn.apply(console, logargs(arguments));
-}
+};
 
 function logargs(args) {
   var newArgs = Array.prototype.slice.call(args, 0);

@@ -21,13 +21,12 @@ module.exports = function createInjector(document, MutationObserver) {
 
   /** Stores (but does not apply) content. */
   function setContent(content) {
-    log("Initialising content", content);
     injectedContent = content;
     foreach(content.changes, function(keyString) {
       var k = parseInt(keyString);
       if (k >= nextEditKey) { nextEditKey = k+1 }
     });
-    log("Initial content received, next edit key: " + nextEditKey);
+    log("Content received, next edit key: " + nextEditKey, content);
   }
 
   /** Applies content to DOM and installs observer. */
@@ -42,11 +41,11 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   /** Reverts changes, then applies the argument (or previously set) content. */
-  function applyContent(contentOrNull) {
+  function applyContent(contentOrNull, allowMismatchedContent) {
     var content = contentOrNull || injectedContent;
     revertContent();
     setContent(content);
-    doApplyContent();
+    doApplyContent(allowMismatchedContent);
   }
 
   /** Reverts all changes in DOM and sets content to no changes. */
@@ -82,8 +81,9 @@ module.exports = function createInjector(document, MutationObserver) {
 
     var key = craptor[CR_KEY];
     var content = extractElementContent(elt);
-    var m = matcher().matcherForElt(elt);
-    if (contentAreEquivalent(content, craptor[CR_ORIG])) {
+    var originalContent = craptor[CR_ORIG];
+    var m = matcher().matcherForElt(elt, originalContent.text || originalContent.html);
+    if (contentAreEquivalent(content, originalContent)) {
       log("Element for " + key + " is in original state");
       delete injectedContent.changes[key];
     } else {
@@ -113,9 +113,9 @@ module.exports = function createInjector(document, MutationObserver) {
     }
   }
 
-  function doApplyContent() {
+  function doApplyContent(allowMismatchedContent) {
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = matcher().findElement(spec.match);
+      var elt = matcher().findElement(spec.match, allowMismatchedContent);
       if (elt) {
         log("Injecting new content for key " + key, spec /*, elt*/);
         injectContent(elt, key, spec.content);
@@ -175,23 +175,23 @@ module.exports = function createInjector(document, MutationObserver) {
     return _matcher;
   }
 
-  var isWatching = false;
+  var _isWatching = false;
   function watchDom() {
-    if (isWatching) { return; }
-    isWatching = true;
+    if (_isWatching) { return; }
+    _isWatching = true;
 
     var observer;
     function observe() {
       observer.observe(document.body, {
-        attributes: true,
         childList: true,
         characterData: true,
-        characterDataOldValue: true,
+        //characterDataOldValue: true,
         subtree: true
+        //attributes: true,
       });
     }
 
-    // TODO(jeeva): Fall back to more widely supported mutation events
+    // TODO(jeeva): Fall back to more widely supported mutation events or timeout
     observer = new MutationObserver(function(mutations) {
       //log("Mutations", mutations);
       observer.disconnect();
@@ -205,7 +205,11 @@ module.exports = function createInjector(document, MutationObserver) {
         var addedNodeSet = {};
         var anyAddedNodes = false;
         for (var i = 0; i < mutation.addedNodes.length; ++i) {
-          addedNodeSet[mutation.addedNodes[i]] = 1;
+          var addedNode = mutation.addedNodes[i];
+          if (addedNode.className && addedNode.className.indexOf("copyraptor-app") != -1) {
+            continue;
+          }
+          addedNodeSet[addedNode] = 1;
           anyAddedNodes = true;
         }
         if (!anyAddedNodes) { return }
@@ -215,6 +219,8 @@ module.exports = function createInjector(document, MutationObserver) {
         // - Early failure of traversal based on path to candidate element
         // - Traverse injections in parallel to build set of matching elts
         foreach(injectedContent.changes, function(key, spec) {
+          // NOTE(alex): This generates "mismatched content" messages when responding to mutations that are
+          // CR injecting content.
           var elt = matcher().findElement(spec.match);
           if (!!addedNodeSet[elt]) {
             injectContent(elt, key, spec.content);

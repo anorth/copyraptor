@@ -81,8 +81,8 @@ describe('Matcher tests', function () {
       var el = body.children[0].children[0];
       var m = matcher.matcherForElt(el);
 
-      expect(m[0]).toContainValues({'class': 'a b'});
-      expect(m[1]).toContainValues({'class': 'a b'});
+      expect(m[0]).toContainValues({'cs': 'a b'});
+      expect(m[1]).toContainValues({'cs': 'a b'});
       expect(matcher.findElement(m)).toBe(el);
     });
   }));
@@ -104,6 +104,36 @@ describe('Matcher tests', function () {
       el2.id = ''; expect(matcher.findElement(m2)).toBe(el2);
     });
   }));
+
+  it('should require matching content', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div>Hello</div>';
+      var el = body.children[0];
+      var m = matcher.matcherForElt(el);
+
+      expect(m[0].ch).toBeDefined();
+
+      el.textContent = "Hi";
+      expect(matcher.findElement(m)).toBeNull();
+
+      el.textContent = "   HEL  LO ";
+      expect(matcher.findElement(m)).toBe(el);
+    });
+  }));
+
+  it('should allow mismatched content when requested', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div>Hello</div>';
+      var el = body.children[0];
+      var m = matcher.matcherForElt(el);
+
+      expect(m[0].ch).toBeDefined();
+
+      el.textContent = "Hi";
+      expect(matcher.findElement(m, true)).toBe(el);
+    });
+  }));
+
 });
 
 
@@ -126,11 +156,11 @@ var customMatchers = {
 
     var level = 0;
     for (var i = 0; i < arguments.length; i += 2) {
-      if (actual[level].name !== arguments[i]) {
-        this.message = function() { return "Expected matcher[" + level + "] to be for " + arguments[i] + " but was " + actual[level].name; };
+      if (actual[level].nm !== arguments[i]) {
+        this.message = function() { return "Expected matcher[" + level + "] to be for " + arguments[i] + " but was " + actual[level].nm; };
         return false;
       }
-      if (actual[level].index !== arguments[i+1]) {
+      if (actual[level].ix !== arguments[i+1]) {
         this.message = function() { return "Expected matcher[" + level + "] to have index " + arguments[i+1]; };
         return false;
       }

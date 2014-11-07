@@ -49,7 +49,7 @@ function EditorApp(injector, env, editable) {
 
   service.load('draft').then(function(content) {
     if (content) {
-      injector.applyContent(content);
+      injector.applyContent(content, true);
     }
 
     removeNode(loadingMsg);
@@ -155,13 +155,13 @@ function EditorApp(injector, env, editable) {
     if (currentVersion == 'draft') {
       currentVersion = 'live';
       draftState = injector.getContent();
-      injector.applyContent(liveState);
+      injector.applyContent(liveState, true);
       switchViewButton.innerText = 'View Draft';
       editable = false;
     } else {
       currentVersion = 'draft';
       assert(draftState);
-      injector.applyContent(draftState);
+      injector.applyContent(draftState, true);
       switchViewButton.innerText = 'View Live';
       editable = true;
     }
@@ -196,6 +196,7 @@ function EditorApp(injector, env, editable) {
 
           editor.detach();
           injector.revertContent();
+          autoSave();
         }}),
         statusText,
         login
