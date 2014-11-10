@@ -4,7 +4,8 @@
   "description": "Injects Copyraptor script into a page for demonstration.",
   "version": "1.0",
 
-  "permissions": [ "activeTab" ],
+  "permissions": [ "activeTab", "storage" ],
+  "options_page": "options.html",
 
   "background": {
     "scripts": ["contentscript.js"],
