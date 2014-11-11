@@ -13,6 +13,7 @@
     el.setAttribute("src", src);
     el.setAttribute("data-copyraptor-site", document.location.host);
     el.setAttribute("data-copyraptor-edit", "");
+    el.setAttribute("data-copyraptor-cachebust", "");
     document.head.appendChild(el);
     el.onload = function() {
       console.log("Copyraptor loaded")
