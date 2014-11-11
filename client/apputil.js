@@ -60,12 +60,12 @@ exports.checkBox = function(label, initial, listener) {
       type:'checkbox', checked:initial, onchange:onchange }), label);
 };
 
-exports.button = function(label, listener) {
-  return E('button', {onclick: listener}, label);
+exports.button = function(label, props, listener) {
+  props.onclick = listener;
+  return E('button', props, label);
 };
-exports.promiseButton = function(label, listener) {
-  var elem = button(label, function() {
-
+exports.promiseButton = function(label, props, listener) {
+  var elem = button(label, props, function() {
     addClass(elem, 'loading');
     listener().then(function() {
       removeClass(elem, 'loading');
@@ -161,9 +161,9 @@ exports.http = function http(method, url, config) {
   var xhr = new XMLHttpRequest();
   xhr.open(method, url, true);
   if (config.headers) {
-    for (k in config.headers) {
-      xhr.setRequestHeader(k, config.headers[k]);
-    }
+    foreach(config.headers, function(k, v) {
+      xhr.setRequestHeader(k, v);
+    });
   }
   xhr.withCredentials = !!config.withCredentials;
   xhr.onload = function (e) {
@@ -180,7 +180,7 @@ exports.http = function http(method, url, config) {
       return defer.promise;
     }
   };
-}
+};
 
 exports.loadCss = function(module) {
   document.head.appendChild(E('style', module.toString()));

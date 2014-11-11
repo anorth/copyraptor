@@ -57,10 +57,14 @@ var env = {
   apiPath: function() { return serverPath + "/api"; },
   contentBlobHost: function() { return contentBlobHost; },
   contentCdnHost: function() { return contentCdnHost; },
-  contentSrc: function(version) {
+  contentSrc: function(version, cacheBust) {
     assert(version);
-    return urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
+    var url = urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
         '/' + params.site + '/' + version;
+    if (cacheBust) {
+      url += "?bust=" + Math.round(new Date().getTime() / 1000);
+    }
+    return url;
   }
 };
 
@@ -70,7 +74,7 @@ function showEditor() {
     require.ensure(['./editor'], function(require) {
       var EditorApp = require('./app');
       editorApp = new EditorApp(injector, env, true);
-      editorApp.show();
+      editorApp.displayToolbar();
     });
   } else {
     log("Editor already loaded");
@@ -99,7 +103,7 @@ if (env.params().site !== undefined) {
   if (env.params().async || (/loaded|complete|interactive/.test(document.readyState))) {
     var el = document.createElement("script");
     el.setAttribute("type", "text/javascript");
-    el.setAttribute("src", env.contentSrc('live'));
+    el.setAttribute("src", env.contentSrc('live', env.params().cachebust));
     document.head.appendChild(el);
     el.onload = function() {
       injector.applyContentAndWatchDom();

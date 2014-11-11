@@ -59,7 +59,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
 
   this.load = function(version) {
     assert(version === 'draft' || version === 'live');
-    var src = contentSrc(version);
+    var src = contentSrc(version, 'cachebust');
 
     return util.http('GET', src).send().then(function(resp) {
       return extractPayload(resp.responseText);

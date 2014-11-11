@@ -5,6 +5,18 @@ var CopyraptorService = require('./service.js');
 var NON_EDITABLE_TAGS = ['IMG'];
 var EDITABLE_DISPLAY_VALUES = ['block', 'inline-block', 'list-item', 'table-cell', 'table-caption'];
 
+var SAVESTATE = {
+  UNSAVED: 'UNSAVED',
+  SAVING: 'SAVING',
+  SAVED: 'SAVED'
+};
+
+var VIEWSTATE = {
+  BASE: 'BASE',
+  PUBLISHED: 'PUBLISHED',
+  DRAFT: 'DRAFT'
+};
+
 // TODO(dan): Kill this with() block.
 with(util) { (function() {
 
@@ -21,42 +33,105 @@ function EditorApp(injector, env, editable) {
   assert(typeof editable == 'boolean');
   editable = !!editable;
 
-  var staticPath = env.staticPath();
   var apiBase = env.apiPath();
 
-  var service = new CopyraptorService(apiBase,
-      env.params().site, env.contentSrc);
-
+  var service = new CopyraptorService(apiBase, env.params().site, env.contentSrc);
   var me = this;
 
   var focusRect = new FocusRect();
-  var statusText = divc('status-text');
-  var saveState;
+  var viewState, saveState;
 
-  updateStatus('saved');
-  function updateStatus(state) {
-    assert(state == 'unsaved' || state == 'saving' || state == 'saved');
-    if (state == 'saved') {
-      // don't clobber unsaved state if pending edits while saving.
-      assert(saveState != 'unsaved');
-    }
+  var viewStateText = divc('status-text');
+  var saveStateText = divc('status-text');
 
-    saveState = state;
-    statusText.innerText = '(' + saveState + ')';
-  }
-
+  var draftState = null;
   var liveState = injector.getContent();
-
   service.load('draft').then(function(content) {
-    if (content) {
-      injector.applyContent(content, true);
-    }
-
+    draftState = content;
+    setViewState(VIEWSTATE.PUBLISHED);
     removeNode(loadingMsg);
-
     init();
   }).catch(function(err) {
     console.error(err);
+  });
+
+
+  function setViewState(state) {
+    assert(VIEWSTATE[state]);
+    viewState = state;
+    viewStateText.innerText = "You're viewing the " + state + " version";
+
+    if (state == VIEWSTATE.PUBLISHED) {
+      draftState = injector.getContent();
+      injector.applyContent(liveState, true);
+      hide(publishButton);
+      hide(editableCheckbox);
+      hide(revertButton);
+      hide(saveStateText);
+      editable = false;
+
+      if (switchViewButton) switchViewButton.innerText = 'Make Changes';
+    } else {
+      assert(draftState, "No draft state");
+      injector.applyContent(draftState, true);
+      show(publishButton);
+      show(editableCheckbox);
+      show(revertButton);
+      editable = true;
+
+      if (switchViewButton) switchViewButton.innerText = 'View Published Version';
+    }
+  }
+
+  setSaveState(SAVESTATE.SAVED);
+  function setSaveState(state) {
+    assert(SAVESTATE[state]);
+    show(saveStateText);
+    if (state == SAVESTATE.SAVED) {
+      // don't clobber unsaved state if pending edits while saving.
+      assert(saveState != SAVESTATE.UNSAVED);
+    }
+
+    saveState = state;
+    saveStateText.innerText = '(' + (state == SAVESTATE.SAVED ? 'Draft saved' : 'Saving...') + ')';
+  }
+
+  var editableCheckbox = checkBox('Enable editing', editable, function(isEditable) {
+    editable = isEditable;
+    if (!editable) {
+      editor.detach();
+      focusRect.hide();
+    }
+  });
+
+  var revertButton = E('a', 'Revert all changes', {
+    className: "revert",
+    onclick: function () {
+      if (!editable) {
+        alert("Goto draft first (TODO better ux)");
+        return;
+      }
+      editor.detach();
+      injector.revertContent();
+      autoSave();
+    }
+  });
+
+  var publishButton = promiseButton('Publish', {className: "publish"}, function () {
+    var content = injector.getContent();
+    // Could use Q.all, but perhaps best to save in order so draft always > live.
+    return save('live').then(function () {
+      liveState = content;
+    });
+  });
+
+  // Quick hack toggle button for now.
+  var switchViewButton = button('View Live', {className: 'switchview'}, function() {
+    if (viewState == VIEWSTATE.DRAFT) {
+      setViewState(VIEWSTATE.PUBLISHED);
+    } else {
+      setViewState(VIEWSTATE.DRAFT);
+    }
   });
 
   function init() {
@@ -88,37 +163,37 @@ function EditorApp(injector, env, editable) {
 
   function saveElem(elem) {
     injector.updateElement(elem);
-    updateStatus('unsaved');
+    setSaveState(SAVESTATE.UNSAVED);
     autoSave();
   }
 
   // TODO(dan): Rate limit on save promise as well.
   var autoSave = util.rateLimited(2000, function() {
-    updateStatus('saving');
+    setSaveState(SAVESTATE.SAVING);
     save('draft').then(function() {
-      if (saveState == 'saving') {
-        updateStatus('saved');
+      if (saveState == SAVESTATE.SAVING) {
+        setSaveState(SAVESTATE.SAVED);
       } else {
         autoSave();
       }
     });
   });
 
-  var login = divc('login-form',
+  var loginDiv = divc('login-form',
       E('p', 'Session expired, please login to save'),
       E('form', {onsubmit: function() {
         try {
           var me = this;
-          addClass(login, 'loading');
+          addClass(loginDiv, 'loading');
           service.doAuth(me.elements.user.value, me.elements.pass.value)
             .then(function() {
-              removeClass(login, 'visible');
+              removeClass(loginDiv, 'visible');
             })
             .catch(function() {
-              addClass(login, 'error');
+              addClass(loginDiv, 'error');
             })
             .finally(function() {
-              removeClass(login, 'loading');
+              removeClass(loginDiv, 'loading');
             });
         } catch(err) {
           console.log(err);
@@ -139,7 +214,7 @@ function EditorApp(injector, env, editable) {
       })
       .catch(function(resp) {
         if (resp.status == 401) { // unauthorised
-          util.addClass(login, 'visible');
+          util.addClass(loginDiv, 'visible');
         }
       });
   }
@@ -147,64 +222,26 @@ function EditorApp(injector, env, editable) {
   var controls;
   var loadingMsg;
 
-
-  // Quick hack toggle button for now.
-  var currentVersion = 'draft';
-  var draftState = null;
-  var switchViewButton = button('View Live', function() {
-    if (currentVersion == 'draft') {
-      currentVersion = 'live';
-      draftState = injector.getContent();
-      injector.applyContent(liveState, true);
-      switchViewButton.innerText = 'View Draft';
-      editable = false;
-    } else {
-      currentVersion = 'draft';
-      assert(draftState);
-      injector.applyContent(draftState, true);
-      switchViewButton.innerText = 'View Live';
-      editable = true;
-    }
-  });
-
-  me.elem = divc('main-panel', 
+  me.elem = divc('main-panel',
       h1('Copyraptor'),
       loadingMsg = divc('controls', 'Loading...'),
-      controls = divc('controls',  {style:{display:'none'}}, // initially hidden
-        checkBox('Editable', editable, function(isEditable) {
-          editable = isEditable;
-          if (!editable) {
-            editor.detach();
-            focusRect.hide();
-          }
-        }),
-        promiseButton('Publish', function() {
-          var content = injector.getContent();
+      controls = divc('controls', {style: {display: 'none'}}, // initially hidden
+          divc('viewstate',
+              viewStateText,
+              switchViewButton
+          ),
 
-          // Could use Q.all, but perhaps best to save in order so draft always > live.
-          return save('live').then(function() {
-            liveState = content;
-          });
-        }),
-        ' | ',
-        switchViewButton,
-        E('a', 'Clear all Copyraptor Changes', { onclick: function() {
-          if (!editable) {
-            alert("Goto draft first (TODO better ux)");
-            return;
-          }
+          publishButton,
+          editableCheckbox,
 
-          editor.detach();
-          injector.revertContent();
-          autoSave();
-        }}),
-        statusText,
-        login
+          revertButton,
+          saveStateText
       ),
+      loginDiv,
       focusRect
-    );
+  );
 
-  me.show = function() {
+  me.displayToolbar = function() {
     if (me.elem.parentNode) {
       return;
     }
@@ -212,6 +249,14 @@ function EditorApp(injector, env, editable) {
     document.body.appendChild(
         divc('copyraptor-app', me));
   };
+
+  function hide(elm) {
+    elm.style.display = "none";
+  }
+
+  function show(elm) {
+    elm.style.display = "";
+  }
 
   function enterElem(ev) {
     var elem = ev.target;
