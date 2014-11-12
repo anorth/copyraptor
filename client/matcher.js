@@ -96,8 +96,8 @@ function traverseMatchFromTop(match, top, allowMismatchedContent) {
     el = child;
   }
   if (!allowMismatchedContent && el && matchPart[CONTENT_HASH] && (hashHtml(el.innerHTML) != matchPart[CONTENT_HASH])) {
-    log("Mismatched content hash, expected " + matchPart[CONTENT] + ", " + matchPart[CONTENT_HASH] +
-      " but was " + hashHtml(el.innerHTML) + ", " + el.innerHTML);
+    log("Mismatched content hash, expected " + /*matchPart[CONTENT] + ", " +*/ matchPart[CONTENT_HASH] +
+      " but was " + hashHtml(el.innerHTML)/* + ", " + el.innerHTML*/);
     el = null;
   }
   return el;

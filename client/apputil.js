@@ -50,7 +50,15 @@ exports.divc = function(klass /*, args */) {
   return E('div', {className:klass}, args);
 };
 
-exports.checkBox = function(label, initial, listener) {
+exports.a = function() {
+  return E('a', args2array(arguments));
+};
+
+exports.label = function(className) {
+  return E('label', {className: className}, args2array(arguments));
+};
+
+  exports.checkBox = function(label, initial, listener) {
   var chk;
 
   function onchange() {
@@ -232,7 +240,7 @@ exports.rateLimited = function(intervalMillis, func) {
     lastScheduled = now + delay;
 
     setTimeout(run, delay);
-  };
+  }
 
   return schedule;
 };

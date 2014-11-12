@@ -48,7 +48,7 @@ module.exports = function createInjector(document, MutationObserver) {
     doApplyContent(allowMismatchedContent);
   }
 
-  /** Reverts all changes in DOM and sets content to no changes. */
+  /** Reverts all changes in DOM and sets content to no changes. Returns the new (empty) content. */
   function revertContent() {
     if (!matcher()) { return; } // Not yet applied
     log("Revert");
@@ -60,6 +60,7 @@ module.exports = function createInjector(document, MutationObserver) {
     });
 
     injectedContent = emptyContent();
+    return injectedContent;
   }
 
   ///// Editor tracking and updates /////

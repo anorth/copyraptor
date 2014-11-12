@@ -57,6 +57,10 @@ exports.foreach = function(obj, fn) {
   }
 };
 
+exports.cloneJson = function(obj) {
+  return JSON.parse(JSON.stringify(obj));
+};
+
 /** Traverses DOM depth-first. Doesn't descend if fn returns truthy. */
 exports.traverseDom = function traverseDom(node, fn) {
   var stop = fn(node);

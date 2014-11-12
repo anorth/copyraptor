@@ -1,32 +1,15 @@
-@mixin flexbox() {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
+
+@mixin box-shadow($shadows...) {
+  -moz-box-shadow: $shadows;
+  -webkit-box-shadow: $shadows;
+  box-shadow: $shadows;
 }
 
-@mixin flex($values) {
-  -webkit-box-flex: $values;
-  -moz-box-flex:  $values;
-  -webkit-flex:  $values;
-  -ms-flex:  $values;
-  flex:  $values;
-}
+$panel-padding-v: 14px;
+$panel-padding-h: 20px;
 
-@mixin order($val) {
-  -webkit-box-ordinal-group: $val;
-  -moz-box-ordinal-group: $val;
-  -ms-flex-order: $val;
-  -webkit-order: $val;
-  order: $val;
-}
-
-@mixin justify-content($values) {
-  -webkit-justify-content:  $values;
-  -ms-justify-content:  $values;
-  justify-content:  $values;
-}
+$background-color: rgba(0, 0, 0, 0.75);
+$button-green: #009600;
 
 .copyraptor-app {
   @import 'reset';
@@ -35,14 +18,41 @@
   line-height: 1.5em;
   direction: ltr;
   text-align: left;
-  font-family: "Calibri", "Arial", sans-serif;
+  font-family: "Tahoma", "Geneva", sans-serif;
   color: black;
   font-style: normal;
   font-weight: normal;
   text-decoration: none;
   list-style-type: disc;
 
-  box-sizing: border-box;
+  *, *:before, *:after {
+    box-sizing: border-box;
+  }
+
+  button {
+    height: 30px;
+    cursor: pointer;
+    background-color: $button-green;
+    color: white;
+    font-size: 16px;
+    letter-spacing: 0.4px;
+
+    &.loading:after {
+      content: ' ';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+    }
+  }
+  @import 'button_loading';
+
+  a {
+    text-decoration: underline;
+  }
+
+  //
+  // Panel
+  //
 
   .main-panel {
     /* TODO: make it change in case want to edit very top of page */
@@ -53,63 +63,99 @@
     right: 0;
 
     color: white;
-    padding: 14px 20px;
-    background: rgba(0, 0, 0, 0.7);
+    padding: $panel-padding-v $panel-padding-h;
+    background: $background-color;
+    @include box-shadow(0 2px 4px 4px rgba(0, 0, 0, 0.8));
   }
 
   .main-panel {
-//    @include flexbox();
+    font-size: 14px;
 
     h1 {
-      font-size: 30px;
-      font-family: monospace;
       display: inline-block;
       line-height: 40px;
-    }
-    h1:before {
-      content: ' ';
-      display: block;
-      float: left;
-      margin-right: 20px;
-      background-image:
-      url('http://fc05.deviantart.net/fs51/i/2009/319/7/6/Raptor_Head_by_Hawt_Shot.png');
-      background-size: 40px 40px;
-      width: 40px;
-      height: 40px;
-      border-radius: 20px;
+      vertical-align: top;
+      margin-top: 10px;
+      font-size: 30px;
+      font-family: monospace;
+      &:before {
+        content: ' ';
+        display: block;
+        float: left;
+        margin-right: 20px;
+        background-image:
+        url('http://fc05.deviantart.net/fs51/i/2009/319/7/6/Raptor_Head_by_Hawt_Shot.png');
+        background-size: 40px 40px;
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
+      }
     }
 
     .controls {
       display: inline-block;
-      margin-left: 20px;
+      padding-left: 40px;
 
       .viewstate {
         display: inline-block;
-        text-align: center;
-        width: 360px;
-
-        .status-text {}
+//        vertical-align: top;
+        label {
+          display: block;
+        }
 
         button {
-          width: 200px;
+          width: 150px;
+          margin: 0;
+          background-color: #686868;
+          color: #e6e6e6;
+          @include box-shadow(0px 0px 2px 1px rgba(0, 0, 0, 0.7) inset);
+          &.active {
+            background-color: $button-green;
+            color: white;
+            cursor: default;
+            @include box-shadow(0px 0px 0px 0px rgba(0, 0, 0, 0.7));
+          }
         }
       }
 
-      button.publish {
-        width: 120px;
-      }
-
-      input[type=checkbox] {
+      .editing {
         display: inline-block;
-        padding: 0 10px;
+        margin-left: 140px;
+
+//        input[type=checkbox] {
+//          display: inline-block;
+//          padding: 0 10px;
+//        }
+
+        button.publish {
+          display: inline-block;
+//          vertical-align: top;
+          width: 170px;
+        }
+
+        div.revert {
+          display: inline-block;
+          vertical-align: bottom;
+          margin-left: 20px;
+          a {
+            display: block;
+          }
+        }
       }
       
-      a.revert {
-        display: inline-block;
-        padding: 20px;
+      .savestate {
+        position: absolute;
+        bottom: $panel-padding-v;
+        right: $panel-padding-h;
       }
+
+
     }
   }
+
+  //
+  // Focus rect
+  //
 
   .focus-rect-segment {
     overflow: hidden;
@@ -174,12 +220,9 @@
     transform: skew(63.43deg, 0deg);
   }
 
-  button {
-    background-color: rgb(135, 135, 243);
-    color: white;
-    margin: 5px;
-    height: 30px;
-  }
+  //
+  // Login form
+  //
 
   .login-form {
     padding: 5px 50px;
@@ -212,13 +255,4 @@
   .login-form.error p.error {
     display: block;
   }
-
-  button.loading:after {
-    content: ' ';
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-  }
-  @import 'button';
-
 }

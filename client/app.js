@@ -41,11 +41,10 @@ function EditorApp(injector, env, editable) {
   var focusRect = new FocusRect();
   var viewState, saveState;
 
-  var viewStateText = divc('status-text');
-  var saveStateText = divc('status-text');
+  var saveStateText = divc('savestate');
 
   var draftState = null;
-  var liveState = injector.getContent();
+  var publishedState = injector.getContent();
   service.load('draft').then(function(content) {
     draftState = content;
     setViewState(VIEWSTATE.PUBLISHED);
@@ -59,27 +58,20 @@ function EditorApp(injector, env, editable) {
   function setViewState(state) {
     assert(VIEWSTATE[state]);
     viewState = state;
-    viewStateText.innerText = "You're viewing the " + state + " version";
 
     if (state == VIEWSTATE.PUBLISHED) {
-      draftState = injector.getContent();
-      injector.applyContent(liveState, true);
-      hide(publishButton);
-      hide(editableCheckbox);
-      hide(revertButton);
-      hide(saveStateText);
+      injector.applyContent(publishedState, true);
+      publishedButton.className = 'active';
+      draftButton.className = '';
+      hide(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton, saveStateText);
       editable = false;
-
-      if (switchViewButton) switchViewButton.innerText = 'Make Changes';
     } else {
       assert(draftState, "No draft state");
       injector.applyContent(draftState, true);
-      show(publishButton);
-      show(editableCheckbox);
-      show(revertButton);
+      draftButton.className = 'active';
+      publishedButton.className = '';
+      show(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton);
       editable = true;
-
-      if (switchViewButton) switchViewButton.innerText = 'View Published Version';
     }
   }
 
@@ -104,34 +96,40 @@ function EditorApp(injector, env, editable) {
     }
   });
 
-  var revertButton = E('a', 'Revert all changes', {
-    className: "revert",
+  var revertToPublishedButton = a({className: 'revert'}, 'Revert to published', {
     onclick: function () {
-      if (!editable) {
-        alert("Goto draft first (TODO better ux)");
-        return;
-      }
+      assert(editable, "Can't revert from published view");
       editor.detach();
-      injector.revertContent();
+      draftState = util.cloneJson(publishedState);
+      injector.applyContent(draftState);
       autoSave();
     }
   });
 
-  var publishButton = promiseButton('Publish', {className: "publish"}, function () {
+  var revertToBaseButton = a({className: 'revert'}, 'Revert all changes', {
+    onclick: function () {
+      assert(editable, "Can't revert from published view");
+      editor.detach();
+      draftState = injector.revertContent();
+      autoSave();
+    }
+  });
+
+  var publishButton = promiseButton('Publish this copy', {className: "publish"}, function () {
     var content = injector.getContent();
     // Could use Q.all, but perhaps best to save in order so draft always > live.
     return save('live').then(function () {
-      liveState = content;
+      publishedState = util.cloneJson(content);
     });
   });
 
   // Quick hack toggle button for now.
-  var switchViewButton = button('View Live', {className: 'switchview'}, function() {
-    if (viewState == VIEWSTATE.DRAFT) {
-      setViewState(VIEWSTATE.PUBLISHED);
-    } else {
-      setViewState(VIEWSTATE.DRAFT);
-    }
+  var publishedButton = button('Published copy', {className: 'published'}, function() {
+    setViewState(VIEWSTATE.PUBLISHED);
+  });
+
+  var draftButton = button('Draft copy', {className: 'draft'}, function() {
+    setViewState(VIEWSTATE.DRAFT);
   });
 
   function init() {
@@ -227,14 +225,19 @@ function EditorApp(injector, env, editable) {
       loadingMsg = divc('controls', 'Loading...'),
       controls = divc('controls', {style: {display: 'none'}}, // initially hidden
           divc('viewstate',
-              viewStateText,
-              switchViewButton
+              label('', 'Showing:'),
+              publishedButton,
+              draftButton
+          ),
+          divc('editing',
+              publishButton,
+              divc('revert',
+                  revertToPublishedButton,
+                  revertToBaseButton
+              )
+              //editableCheckbox
           ),
 
-          publishButton,
-          editableCheckbox,
-
-          revertButton,
           saveStateText
       ),
       loginDiv,
@@ -250,12 +253,16 @@ function EditorApp(injector, env, editable) {
         divc('copyraptor-app', me));
   };
 
-  function hide(elm) {
-    elm.style.display = "none";
+  function hide(elms) {
+    for (var i = 0; i < arguments.length; ++i) {
+      arguments[i].style.display = "none";
+    }
   }
 
-  function show(elm) {
-    elm.style.display = "";
+  function show(elms) {
+    for (var i = 0; i < arguments.length; ++i) {
+      arguments[i].style.display = "";
+    }
   }
 
   function enterElem(ev) {
