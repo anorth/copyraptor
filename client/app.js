@@ -42,7 +42,7 @@ function EditorApp(injector, env, editable) {
   var saveStateText = util.divc('savestate');
 
   var draftState = null;
-  var publishedState = injector.getContent();
+  var publishedState = injector.getContent(); // TODO(alex): Re-load with cache buster & set cookie to do so
   service.load('draft').then(function(content) {
     draftState = content || util.cloneJson(publishedState);
     setViewState(VIEWSTATE.PUBLISHED);
@@ -56,6 +56,7 @@ function EditorApp(injector, env, editable) {
   function setViewState(state) {
     assert(VIEWSTATE[state]);
     viewState = state;
+    editor.detach();
 
     if (state == VIEWSTATE.PUBLISHED) {
       injector.applyContent(publishedState, true);
@@ -114,6 +115,7 @@ function EditorApp(injector, env, editable) {
   });
 
   var publishButton = util.promiseButton('Publish this copy', {className: "publish"}, function () {
+    editor.detach();
     var content = injector.getContent();
     // Could use Q.all, but perhaps best to save in order so draft always > live.
     return save('live').then(function () {
@@ -134,7 +136,8 @@ function EditorApp(injector, env, editable) {
     controls.style.display = '';
     document.body.addEventListener('mouseover', contentHandler(enterElem));
     document.body.addEventListener('mouseout',  contentHandler(leaveElem));
-    document.body.addEventListener('mousedown', contentHandler(mousedownElem));
+    document.body.addEventListener('mousedown', contentHandler(mousedownElem), true);
+    document.body.addEventListener('click', contentHandler(clickElem), true);
   }
 
   var editor = new Editor({
@@ -164,6 +167,7 @@ function EditorApp(injector, env, editable) {
   }
 
   // TODO(dan): Rate limit on save promise as well.
+  // TODO(alex): Confirm won't race with switching view and overwrite draft with published
   var autoSave = util.rateLimited(2000, function() {
     setSaveState(SAVESTATE.SAVING);
     save('draft').then(function() {
@@ -315,14 +319,24 @@ function EditorApp(injector, env, editable) {
 
   function mousedownElem(ev) {
     var elem = ev.target;
+    var editing = false;
 
     if (editor.attached()) {
       if (!util.isOrHasChild(editor.currentElem(), elem)) {
         editor.detach();
-        tryEdit(elem);
+        editing = tryEdit(elem);
       }
     } else {
-      tryEdit(elem);
+      editing = tryEdit(elem);
+    }
+    if (editing) { ev.stopPropagation(); }
+  }
+
+  function clickElem(ev) {
+    var elem = ev.target;
+    if (editor.attached() && util.isOrHasChild(editor.currentElem(), elem)) {
+      ev.stopPropagation();
+      ev.preventDefault();
     }
   }
 
@@ -330,6 +344,7 @@ function EditorApp(injector, env, editable) {
     tryFocusElem(elem);
     if (util.isOrHasChild(focusRect.wrapped, elem)) {
       editor.attach(focusRect.wrapped);
+      return true;
     }
   }
 

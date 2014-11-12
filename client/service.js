@@ -64,9 +64,10 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     return util.http('GET', src).send().then(function(resp) {
       return extractPayload(resp.responseText);
     })
-    .catch(function(err) {
-      console.error(err);
-
+    .catch(function(resp) {
+      if (resp.status != 403 && resp.status != 404) {
+        console.error(resp);
+      }
       // just transform to null.
       return null;
     });
