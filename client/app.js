@@ -276,14 +276,29 @@ function EditorApp(injector, env, editable) {
   }
 
   function tryFocusElem(elem) {
+    // Top down
+    var ancestors = [];
     while (elem != null) {
-      if (isSuitableForEditing(elem)) {
-        focusRect.wrap(elem);
-        return;
-      }
-
+      ancestors.push(elem);
       elem = elem.parentNode;
     }
+    ancestors.reverse();
+    for (var i = 0; i < ancestors.length; ++i) {
+      if (hasNonWhiteTextNodes(ancestors[i])) {
+        focusRect.wrap(ancestors[i]);
+        return;
+      }
+    }
+
+    // Bottom up (old way)
+    //while (elem != null) {
+    //  if (isSuitableForEditing(elem)) {
+    //    focusRect.wrap(elem);
+    //    return;
+    //  }
+    //
+    //  elem = elem.parentNode;
+    //}
   }
 
   function leaveElem() {
@@ -334,6 +349,17 @@ function EditorApp(injector, env, editable) {
     var tagNameIsSuitable = NON_EDITABLE_TAGS.indexOf(node.tagName) == -1;
 
     return displayIsSuitable && tagNameIsSuitable;
+  }
+
+  function hasNonWhiteTextNodes(elem) {
+    var child = elem.firstChild;
+    var nonWhitespace = /[^\s]+/;
+    while (child != null) {
+      if (child.nodeType == 3 && nonWhitespace.test(child.nodeValue)) {
+        return true;
+      }
+      child = child.nextSibling;
+    }
   }
 
   /**
