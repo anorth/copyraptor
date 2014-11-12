@@ -1,4 +1,5 @@
 var util = require('./apputil');
+var log=util.log, assert=util.assert;
 var CopyraptorService = require('./service.js');
 
 // TODO(alex): More from http://www.quackit.com/html/tags/ or http://www.w3.org/TR/html51/
@@ -16,9 +17,6 @@ var VIEWSTATE = {
   PUBLISHED: 'PUBLISHED',
   DRAFT: 'DRAFT'
 };
-
-// TODO(dan): Kill this with() block.
-with(util) { (function() {
 
 var Q = require('q');
 Q.longStackSupport = true;
@@ -41,14 +39,14 @@ function EditorApp(injector, env, editable) {
   var focusRect = new FocusRect();
   var viewState, saveState;
 
-  var saveStateText = divc('savestate');
+  var saveStateText = util.divc('savestate');
 
   var draftState = null;
   var publishedState = injector.getContent();
   service.load('draft').then(function(content) {
     draftState = content || util.cloneJson(publishedState);
     setViewState(VIEWSTATE.PUBLISHED);
-    removeNode(loadingMsg);
+    util.removeNode(loadingMsg);
     init();
   }).catch(function(err) {
     console.error(err);
@@ -88,7 +86,7 @@ function EditorApp(injector, env, editable) {
     saveStateText.innerText = '(' + (state == SAVESTATE.SAVED ? 'Draft saved' : 'Saving...') + ')';
   }
 
-  var editableCheckbox = checkBox('Enable editing', editable, function(isEditable) {
+  var editableCheckbox = util.checkBox('Enable editing', editable, function(isEditable) {
     editable = isEditable;
     if (!editable) {
       editor.detach();
@@ -96,7 +94,7 @@ function EditorApp(injector, env, editable) {
     }
   });
 
-  var revertToPublishedButton = a({className: 'revert'}, 'Revert to published', {
+  var revertToPublishedButton = util.a({className: 'revert'}, 'Revert to published', {
     onclick: function () {
       assert(editable, "Can't revert from published view");
       editor.detach();
@@ -106,7 +104,7 @@ function EditorApp(injector, env, editable) {
     }
   });
 
-  var revertToBaseButton = a({className: 'revert'}, 'Revert all changes', {
+  var revertToBaseButton = util.a({className: 'revert'}, 'Revert all changes', {
     onclick: function () {
       assert(editable, "Can't revert from published view");
       editor.detach();
@@ -115,7 +113,7 @@ function EditorApp(injector, env, editable) {
     }
   });
 
-  var publishButton = promiseButton('Publish this copy', {className: "publish"}, function () {
+  var publishButton = util.promiseButton('Publish this copy', {className: "publish"}, function () {
     var content = injector.getContent();
     // Could use Q.all, but perhaps best to save in order so draft always > live.
     return save('live').then(function () {
@@ -124,11 +122,11 @@ function EditorApp(injector, env, editable) {
   });
 
   // Quick hack toggle button for now.
-  var publishedButton = button('Published copy', {className: 'published'}, function() {
+  var publishedButton = util.button('Published copy', {className: 'published'}, function() {
     setViewState(VIEWSTATE.PUBLISHED);
   });
 
-  var draftButton = button('Draft copy', {className: 'draft'}, function() {
+  var draftButton = util.button('Draft copy', {className: 'draft'}, function() {
     setViewState(VIEWSTATE.DRAFT);
   });
 
@@ -148,12 +146,12 @@ function EditorApp(injector, env, editable) {
       saveElem(editor.currentElem());
     },
     onAttached: function(elem) {
-      addClass(me.elem, 'editing');
+      util.addClass(me.elem, 'editing');
       focusRect.wrap(editor.currentElem());
       injector.trackElement(elem);
     },
-    onDetached: function(elem) {
-      removeClass(me.elem, 'editing');
+    onDetached: function() {
+      util.removeClass(me.elem, 'editing');
       focusRect.hide();
       // saveElem(elem);
     }
@@ -174,38 +172,38 @@ function EditorApp(injector, env, editable) {
       } else {
         autoSave();
       }
-    }).catch(function (e) {
+    }).catch(function () {
       setSaveState(SAVESTATE.UNSAVED);
     });
   });
 
-  var loginDiv = divc('login-form',
-      E('p', 'Please sign in to save changes'),
-      E('form', {onsubmit: function() {
+  var loginDiv = util.divc('login-form',
+      util.E('p', 'Please sign in to save changes'),
+      util.E('form', {onsubmit: function() {
         try {
           var me = this;
-          addClass(loginDiv, 'loading');
+          util.addClass(loginDiv, 'loading');
           service.doAuth(me.elements.user.value, me.elements.password.value)
             .then(function() {
-              log("Sign in successful");
-              removeClass(loginDiv, 'visible');
+                log("Sign in successful");
+                util.removeClass(loginDiv, 'visible');
             })
             .catch(function(e) {
-              log("Sign in failed", e);
-              addClass(loginDiv, 'error');
+                log("Sign in failed", e);
+                util.addClass(loginDiv, 'error');
             })
             .finally(function() {
-              removeClass(loginDiv, 'loading');
+                util.removeClass(loginDiv, 'loading');
             });
         } catch(err) {
           log(err);
         }
         return false;
       }},
-        E('input', {type:'text', name: 'user', 'placeholder': 'username', value: env.params().site}),
-        E('input', {type:'password', name: 'password', 'placeholder': 'password'}),
-        E('button', 'Sign in '),
-        E('p', {'className': 'error'}, "Couldn't sign in with those values, please try again.")
+        util.E('input', {type:'text', name: 'user', 'placeholder': 'username', value: env.params().site}),
+        util.E('input', {type:'password', name: 'password', 'placeholder': 'password'}),
+        util.E('button', 'Sign in '),
+        util.E('p', {'className': 'error'}, "Couldn't sign in with those values, please try again.")
       )
   );
 
@@ -222,18 +220,18 @@ function EditorApp(injector, env, editable) {
   var controls;
   var loadingMsg;
 
-  me.elem = divc('main-panel',
-      h1('Copyraptor'),
-      loadingMsg = divc('controls', 'Loading...'),
-      controls = divc('controls', {style: {display: 'none'}}, // initially hidden
-          divc('viewstate',
-              label('', 'Showing:'),
+  me.elem = util.divc('main-panel',
+      util.h1('Copyraptor'),
+      loadingMsg = util.divc('controls', 'Loading...'),
+      controls = util.divc('controls', {style: {display: 'none'}}, // initially hidden
+          util.divc('viewstate',
+              util.label('', 'Showing:'),
               publishedButton,
               draftButton
           ),
-          divc('editing',
+          util.divc('editing',
               publishButton,
-              divc('revert',
+              util.divc('revert',
                   revertToPublishedButton,
                   revertToBaseButton
               )
@@ -252,7 +250,7 @@ function EditorApp(injector, env, editable) {
     }
 
     document.body.appendChild(
-        divc('copyraptor-app', me));
+        util.divc('copyraptor-app', me));
   };
 
   function hide(elms) {
@@ -288,7 +286,7 @@ function EditorApp(injector, env, editable) {
     }
   }
 
-  function leaveElem(ev) {
+  function leaveElem() {
     //var elem = ev.target;
     //if (elem != focusRect.wrapped) {
     //  return;
@@ -304,7 +302,7 @@ function EditorApp(injector, env, editable) {
     var elem = ev.target;
 
     if (editor.attached()) {
-      if (!isOrHasChild(editor.currentElem(), elem)) {
+      if (!util.isOrHasChild(editor.currentElem(), elem)) {
         editor.detach();
         tryEdit(elem);
       }
@@ -315,7 +313,7 @@ function EditorApp(injector, env, editable) {
 
   function tryEdit(elem) {
     tryFocusElem(elem);
-    if (isOrHasChild(focusRect.wrapped, elem)) {
+    if (util.isOrHasChild(focusRect.wrapped, elem)) {
       editor.attach(focusRect.wrapped);
     }
   }
@@ -356,10 +354,8 @@ function EditorApp(injector, env, editable) {
 
   function isOurUi(elem) {
     return (
-      isOrHasChild(me.elem, elem) ||
-      isOrHasChild(focusRect, elem)
-      );
+    util.isOrHasChild(me.elem, elem) ||
+    util.isOrHasChild(focusRect, elem)
+    );
   }
 }
-
-})(); }
