@@ -5,8 +5,23 @@
   box-shadow: $shadows;
 }
 
+@mixin placeholder($color) {
+  ::-webkit-input-placeholder {
+    color: $color;
+  }
+
+  ::-moz-placeholder {  /* Firefox 19+ */
+    color: $color;
+  }
+
+  :-ms-input-placeholder {
+    color: $color;
+  }
+}
+
 $panel-padding-v: 14px;
 $panel-padding-h: 20px;
+$button-height: 30px;
 
 $background-color: rgba(0, 0, 0, 0.75);
 $button-green: #009600;
@@ -28,9 +43,10 @@ $button-green: #009600;
   *, *:before, *:after {
     box-sizing: border-box;
   }
+  @include placeholder(#7f7f7f);
 
   button {
-    height: 30px;
+    height: $button-height;
     cursor: pointer;
     background-color: $button-green;
     color: white;
@@ -225,34 +241,37 @@ $button-green: #009600;
   //
 
   .login-form {
-    padding: 5px 50px;
+    padding: 30px 0 $panel-padding-v 60px;
     display: none;
 
-    p {
-      font-weight: bold;
-      margin-bottom: 5px;
+    &.visible {
+      display: block;
     }
-    p.error {
-      font-weight: bold;
-      color: rgb(248, 81, 81);
-      display: none
-    }
+
+
     input {
       width: 180px;
-      margin: 5px;
+      height: $button-height;
+      vertical-align: bottom;
+      margin-right: 10px;
+      padding: 2px;
       line-height: 20px;
     }
     button {
-      height: 45px;
+      width: 100px;
+      vertical-align: bottom;
     }
-  }
-
-  .login-form.visible {
-    padding: 5px 50px;
-    display: block;
-  }
-
-  .login-form.error p.error {
-    display: block;
+    p {
+      margin-bottom: 5px;
+      line-height: 24px;
+      &.error {
+        color: rgb(248, 81, 81);
+        display: none;
+        margin-bottom: -24px;
+      }
+    }
+    &.error p.error {
+      display: block;
+    }
   }
 }

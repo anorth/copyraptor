@@ -34,7 +34,7 @@ exports.addClass = function(elem, klass) {
   elem.className += ' ' + klass;
 };
 exports.removeClass = function(elem, klass) {
-  elem.className = elem.className.replace(new RegExp(' *' + klass + ' *'), ' ');
+  elem.className = elem.className.replace(new RegExp(' *' + klass + ' *', 'g'), ' ');
 };
 
 exports.loadCss = function(module) {

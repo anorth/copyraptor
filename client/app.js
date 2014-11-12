@@ -46,7 +46,7 @@ function EditorApp(injector, env, editable) {
   var draftState = null;
   var publishedState = injector.getContent();
   service.load('draft').then(function(content) {
-    draftState = content;
+    draftState = content || util.cloneJson(publishedState);
     setViewState(VIEWSTATE.PUBLISHED);
     removeNode(loadingMsg);
     init();
@@ -174,46 +174,48 @@ function EditorApp(injector, env, editable) {
       } else {
         autoSave();
       }
+    }).catch(function (e) {
+      setSaveState(SAVESTATE.UNSAVED);
     });
   });
 
   var loginDiv = divc('login-form',
-      E('p', 'Session expired, please login to save'),
+      E('p', 'Please sign in to save changes'),
       E('form', {onsubmit: function() {
         try {
           var me = this;
           addClass(loginDiv, 'loading');
-          service.doAuth(me.elements.user.value, me.elements.pass.value)
+          service.doAuth(me.elements.user.value, me.elements.password.value)
             .then(function() {
+              log("Sign in successful");
               removeClass(loginDiv, 'visible');
             })
-            .catch(function() {
+            .catch(function(e) {
+              log("Sign in failed", e);
               addClass(loginDiv, 'error');
             })
             .finally(function() {
               removeClass(loginDiv, 'loading');
             });
         } catch(err) {
-          console.log(err);
+          log(err);
         }
         return false;
       }},
-        E('p', {'className': 'error'}, 'Invalid username or password'),
-        E('input', {type:'text', name: 'user', 'placeholder': 'username'}),
-        E('input', {type:'password', name: 'pass', 'placeholder': 'password'}),
-        E('button', 'login ')
+        E('input', {type:'text', name: 'user', 'placeholder': 'username', value: env.params().site}),
+        E('input', {type:'password', name: 'password', 'placeholder': 'password'}),
+        E('button', 'Sign in '),
+        E('p', {'className': 'error'}, "Couldn't sign in with those values, please try again.")
       )
   );
 
   function save(version) {
     return service.save(injector.getContent(), version)
-      .then(function() {
-        noUnsavedChanges();
-      })
       .catch(function(resp) {
         if (resp.status == 401) { // unauthorised
           util.addClass(loginDiv, 'visible');
         }
+        throw resp;
       });
   }
 

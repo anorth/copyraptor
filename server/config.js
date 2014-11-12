@@ -5,6 +5,7 @@ module.exports = {
   },
 
   USERS: {
+    editordemo: { password: 'editordemo' },
     helix: { password: 'helix' },
     firstorder: { password: 'firstorder' }
   },
