@@ -116,10 +116,12 @@ module.exports = function createInjector(document, MutationObserver) {
 
   function doApplyContent(allowMismatchedContent) {
     foreach(injectedContent.changes, function(key, spec) {
-      var elt = matcher().findElement(spec.match, allowMismatchedContent);
-      if (elt) {
-        log("Injecting new content for key " + key, spec /*, elt*/);
-        injectContent(elt, key, spec.content);
+      var elts = matcher().findElements(spec.match, allowMismatchedContent);
+      if (elts) {
+        for (var i = 0; i < elts.length; ++i) {
+          log("Injecting new content for key " + key, spec /*, elts[i]*/);
+          injectContent(elts[i], key, spec.content);
+        }
       } else {
         log("No elt (yet) for key " + key, spec);
       }
@@ -222,9 +224,11 @@ module.exports = function createInjector(document, MutationObserver) {
         foreach(injectedContent.changes, function(key, spec) {
           // NOTE(alex): This generates "mismatched content" messages when responding to mutations that are
           // CR injecting content.
-          var elt = matcher().findElement(spec.match);
-          if (!!addedNodeSet[elt]) {
-            injectContent(elt, key, spec.content);
+          var elts = matcher().findElements(spec.match);
+          for (var i = 0; i < elts.length; ++i) {
+            if (!!addedNodeSet[elts[i]]) {
+              injectContent(elts[i], key, spec.content);
+            }
           }
         });
       });

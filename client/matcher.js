@@ -9,51 +9,43 @@ var foreach = util.foreach;
 var log = util.log;
 var warn = util.warn;
 
-var NAME = "nm", INDEX = "ix", ID = "id", CLASS="cs", CONTENT_HASH="ch", CONTENT="ct";
+var NAME = "nm", INDEX = "ix", ID = "id", CLASS="cs", CONTENT_HASH="ch", CONTENT="ct", TAG="tg";
+var tagClassPattern = /\b(cr-[\w_-]+)\b/;
 
 module.exports = function Matcher(bodyElt) {
   'use strict';
   var me = this;
 
+
   /**
    * Builds a matcher specifying the path from an element up to the body. The result is an array of
-   * objects describing each level, bottom-up.
+   * objects describing each level, bottom-up. If the element is tagged with a copyraptor class name,
+   * of the form class="copyraptor cr-tag" the array will be of length one with an entry specifying that class.
+   *
+   * May return null if an element is tagged incorrectly.
    */
   me.matcherForElt = function(eltToMatch, origContent) {
-    var path = []; // Bottom up order
-    var ancestor = eltToMatch;
-
     assert(eltToMatch != bodyElt);
-    while (ancestor !== bodyElt && ancestor !== undefined) {
-      var siblingIndex = 0, sib = ancestor;
-      while ((sib = sib.previousSibling) !== null) {
-        if (sib.children /* Elements only */ !== undefined) {
-          siblingIndex++;
-        }
-      }
-
-      var step = {};
-      step[NAME] = ancestor.nodeName;
-      step[INDEX] = siblingIndex;
-      step[ID] = ancestor.id || undefined;
-      step[CLASS] = normalizeClass(ancestor.className);
-      path.push(step);
-
-      ancestor = ancestor.parentElement;
+    if (tagClassPattern.test(eltToMatch.className)) {
+      return classMatcherForElt(eltToMatch, origContent);
+    } else {
+      return pathMatcherForElt(eltToMatch, origContent, bodyElt);
     }
-
-    path[0][CONTENT_HASH] = hashHtml(origContent || eltToMatch.innerHTML);
-    path[0][CONTENT] = origContent || eltToMatch.innerHTML; // Debug only
-    return path;
   };
 
   /**
-   * Finds the element matching a path built by matcherForElt under the body.
+   * Finds the elements matching a path built by matcherForElt under the body.
+   *
+   * If the matcher specifies a class tag, all element with that tag are returned (whether or not they also
+   * have class "copyraptor").
    */
-  me.findElement = function(match, allowMismatchedContent) {
+  me.findElements = function(match, allowMismatchedContent) {
     try {
-      // TODO(alex): Fall back to heuristics based on match path properties if not found.
-      return traverseMatchFromTop(match, bodyElt, allowMismatchedContent);
+      if (match[0][TAG]) {
+        return findClassMatches(match, bodyElt);
+      } else {
+        return traverseMatchFromTop(match, bodyElt, allowMismatchedContent);
+      }
     } catch (e) {
       log("Exception executing match", match, e);
       return null;
@@ -63,8 +55,46 @@ module.exports = function Matcher(bodyElt) {
 
 ///// Implementation /////
 
+function pathMatcherForElt(eltToMatch, origContent, bodyElt) {
+  var path = []; // Bottom up order
+  var ancestor = eltToMatch;
+  while (ancestor !== bodyElt && ancestor !== undefined) {
+    var siblingIndex = 0, sib = ancestor;
+    while ((sib = sib.previousSibling) !== null) {
+      if (sib.children /* Elements only */ !== undefined) {
+        siblingIndex++;
+      }
+    }
+
+    var step = {};
+    step[NAME] = ancestor.nodeName;
+    step[INDEX] = siblingIndex;
+    step[ID] = ancestor.id || undefined;
+    step[CLASS] = normalizeClass(ancestor.className);
+    path.push(step);
+
+    ancestor = ancestor.parentElement;
+  }
+
+  path[0][CONTENT_HASH] = hashHtml(origContent || eltToMatch.innerHTML);
+  path[0][CONTENT] = origContent || eltToMatch.innerHTML; // Debug only
+  return path;
+}
+
+function classMatcherForElt(eltToMatch, origContent) {
+  var match = tagClassPattern.exec(eltToMatch.className);
+  if (match != null) {
+    var tag = match[1].substr(3); // Just use the first tag class
+    var step = {};
+    step[TAG] = tag;
+    return [step];
+  }
+  log("Elt tagged incorrectly, must have exactly one cr-[tag] class", eltToMatch);
+  return null;
+}
+
 // Traces a match from a top node, seeking matching leaf.
-// Returns an element, or null.
+// Returns an array with a single element, or null.
 function traverseMatchFromTop(match, top, allowMismatchedContent) {
   var pathFromTop = match.slice();
   pathFromTop.reverse();
@@ -100,7 +130,17 @@ function traverseMatchFromTop(match, top, allowMismatchedContent) {
       " but was " + hashHtml(el.innerHTML)/* + ", " + el.innerHTML*/);
     el = null;
   }
-  return el;
+  return (el != null) ? [el] : null;
+}
+
+function findClassMatches(match, top) {
+  var className = 'cr-' + match[0][TAG];
+  var collection = top.getElementsByClassName(className);
+  var results = [];
+  for (var i = 0; i < collection.length; ++i) {
+    results.push(collection[i]);
+  }
+  return results;
 }
 
 function normalizeClass(className) {

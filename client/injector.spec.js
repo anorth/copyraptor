@@ -55,13 +55,22 @@ describe('Injection tests', function() {
     })
   }));
 
-  it('should inject many text contents', util.promised(function() {
+  it('should inject many text contents with distinct matchers', util.promised(function() {
     return dom.then(function(window) {
       body.innerHTML = '<p>A</p><p>B</p>';
 
       injector.applyContent(changeSpec().withText(body.children[0], "Replaced")
           .withText(body.children[1], "Also replaced"));
       expect(body.innerHTML).toEqual('<p>Replaced</p><p>Also replaced</p>');
+    })
+  }));
+
+  it('should inject many text contents with same class matcher', util.promised(function() {
+    return dom.then(function(window) {
+      body.innerHTML = '<p class="cr-tag">A</p><p class="cr-tag someclass">B</p>';
+
+      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"));
+      expect(body.innerHTML).toEqual('<p class="cr-tag">Replaced</p><p class="cr-tag someclass">Replaced</p>');
     })
   }));
 

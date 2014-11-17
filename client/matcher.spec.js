@@ -31,7 +31,7 @@ describe('Matcher tests', function () {
       var m = matcher.matcherForElt(el);
 
       expect(m).toHavePath('DIV', 0);
-      expect(matcher.findElement(m)).toBe(el);
+      expect(matcher.findElements(m)[0]).toBe(el);
     });
   }));
 
@@ -43,7 +43,7 @@ describe('Matcher tests', function () {
         el = body.children[i];
         m = matcher.matcherForElt(el);
         expect(m).toHavePath('DIV', i);
-        expect(matcher.findElement(m)).toBe(el);
+        expect(matcher.findElements(m)[0]).toBe(el);
       }
     });
   }));
@@ -56,11 +56,11 @@ describe('Matcher tests', function () {
 
       var m = matcher.matcherForElt(p);
       expect(m).toHavePath('P', 0, 'DIV', 0);
-      expect(matcher.findElement(m)).toBe(p);
+      expect(matcher.findElements(m)[0]).toBe(p);
 
       m = matcher.matcherForElt(span);
       expect(m).toHavePath('SPAN', 0, 'P', 0, 'DIV', 0);
-      expect(matcher.findElement(m)).toBe(span);
+      expect(matcher.findElements(m)[0]).toBe(span);
     });
   }));
 
@@ -71,7 +71,7 @@ describe('Matcher tests', function () {
       var m = matcher.matcherForElt(el);
 
       expect(m[0]).toContainValues({'id': 'a'});
-      expect(matcher.findElement(m)).toBe(el);
+      expect(matcher.findElements(m)[0]).toBe(el);
     });
   }));
 
@@ -83,7 +83,7 @@ describe('Matcher tests', function () {
 
       expect(m[0]).toContainValues({'cs': 'a b'});
       expect(m[1]).toContainValues({'cs': 'a b'});
-      expect(matcher.findElement(m)).toBe(el);
+      expect(matcher.findElements(m)[0]).toBe(el);
     });
   }));
 
@@ -94,14 +94,14 @@ describe('Matcher tests', function () {
 
       var el1 = body.children[0];
       var m1 = matcher.matcherForElt(el1);
-      el1.id = ''; expect(matcher.findElement(m1)).toBeNull();
-      el1.id = 'b'; expect(matcher.findElement(m1)).toBeNull();
-      el1.id = '1'; expect(matcher.findElement(m1)).toBe(el1);
+      el1.id = ''; expect(matcher.findElements(m1)).toBeNull();
+      el1.id = 'b'; expect(matcher.findElements(m1)).toBeNull();
+      el1.id = '1'; expect(matcher.findElements(m1)[0]).toBe(el1);
 
       var el2 = body.children[1];
       var m2 = matcher.matcherForElt(el2);
-      el2.id = 'a'; expect(matcher.findElement(m2)).toBeNull();
-      el2.id = ''; expect(matcher.findElement(m2)).toBe(el2);
+      el2.id = 'a'; expect(matcher.findElements(m2)).toBeNull();
+      el2.id = ''; expect(matcher.findElements(m2)[0]).toBe(el2);
     });
   }));
 
@@ -114,10 +114,10 @@ describe('Matcher tests', function () {
       expect(m[0].ch).toBeDefined();
 
       el.textContent = "Hi";
-      expect(matcher.findElement(m)).toBeNull();
+      expect(matcher.findElements(m)).toBeNull();
 
       el.textContent = "   HEL  LO ";
-      expect(matcher.findElement(m)).toBe(el);
+      expect(matcher.findElements(m)[0]).toBe(el);
     });
   }));
 
@@ -130,7 +130,45 @@ describe('Matcher tests', function () {
       expect(m[0].ch).toBeDefined();
 
       el.textContent = "Hi";
-      expect(matcher.findElement(m, true)).toBe(el);
+      expect(matcher.findElements(m, true)[0]).toBe(el);
+    });
+  }));
+
+  it('should match tagged element', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="cr-tag class anotherclass">Hello</div>';
+      var el = body.children[0];
+      var m = matcher.matcherForElt(el);
+
+      expect(m[0].tg).toBeDefined();
+
+      el.textContent = "Hi";
+      expect(matcher.findElements(m)[0]).toBe(el);
+    });
+  }));
+
+  it('should match all tagged elements', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="cr-tag">Hello</div><div class="cr-tag">World</div>';
+
+      var m = matcher.matcherForElt(body.children[0]);
+      expect(m[0].tg).toBeDefined();
+
+      expect(matcher.findElements(m)[0]).toBe(body.children[0]);
+      expect(matcher.findElements(m)[1]).toBe(body.children[1]);
+    });
+  }));
+
+  it('should match only correctly tagged elements', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="cr-a">Hello</div><div class="cr-b">World</div><div class="blah">Again</div>';
+      var el = body.children[0];
+
+      var m = matcher.matcherForElt(el);
+      expect(m[0].tg).toBeDefined();
+
+      expect(matcher.findElements(m).length).toBe(1);
+      expect(matcher.findElements(m)[0]).toBe(el);
     });
   }));
 
