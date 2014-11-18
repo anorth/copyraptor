@@ -49,6 +49,24 @@ exports.queryParam = function(name) {
   return results === null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
 };
 
+exports.queryParams = function() {
+  var query = location.search.substr(1);
+  if (!query && location.href.indexOf("#") != -1) {
+    var pos = location.href.indexOf("?");
+    if(pos != -1) {
+      query = location.href.substr(pos+1);
+    }
+  }
+  var result = {};
+  query.split("&").forEach(function(part) {
+    if(!part) return;
+    var item = part.split("=");
+    var key = item[0];
+    result[key] = decodeURIComponent(item[1]);
+   });
+  return result;
+};
+
 exports.foreach = function(obj, fn) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) {

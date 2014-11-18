@@ -224,7 +224,7 @@ module.exports = function createInjector(document, MutationObserver) {
         foreach(injectedContent.changes, function(key, spec) {
           // NOTE(alex): This generates "mismatched content" messages when responding to mutations that are
           // CR injecting content.
-          var elts = matcher().findElements(spec.match);
+          var elts = matcher().findElements(spec.match) || [];
           for (var i = 0; i < elts.length; ++i) {
             if (!!addedNodeSet[elts[i]]) {
               injectContent(elts[i], key, spec.content);

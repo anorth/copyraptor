@@ -14,7 +14,9 @@ for (i = 0; i < tags.length; ++i) {
 
   if (tag.getAttribute("data-copyraptor-site") !== null) {
     staticPath = tag.src.split(/[\w_-]+.js/)[0].replace(/\/$/, '');
-    console.log(staticPath);
+    log(staticPath);
+
+    // Process attribute-based settings, e.g. data-copyraptor-edit="1"
     for (i = 0; i < tag.attributes.length; ++i) {
       var attr = tag.attributes[i];
       if (attr.specified && attr.name.slice(0, 16) === 'data-copyraptor-') {
@@ -25,11 +27,15 @@ for (i = 0; i < tags.length; ++i) {
   }
 }
 
+// Process query params, overriding tag
+util.foreach(util.queryParams(), function(key, value) {
+  if (key.indexOf("copyraptor-") == 0) {
+    params[key.substring(11)] = value || true;
+  }
+});
+
 if (params.site === "") {
   params.site = document.location.host;
-}
-if (!!util.queryParam("copyraptor")) {
-  params.edit = true;
 }
 
 if (staticPath) {
@@ -49,7 +55,6 @@ if (staticPath) {
 
 log("Params: ", params);
 
-// TODO(dan>someone): Tighten this up
 var env = {
   params: function() { return params; },
   staticPath: function() { return staticPath; },
