@@ -39,18 +39,25 @@ module.exports = function Matcher(bodyElt) {
    * If the matcher specifies a class tag, all element with that tag are returned (whether or not they also
    * have class "copyraptor").
    */
-  me.findElements = function(match, allowMismatchedContent) {
+  me.findElements = function(match, allowPathMatchers, allowMismatchedContent) {
     try {
       if (match[0][TAG]) {
         return findClassMatches(match, bodyElt);
-      } else {
+      } else if (allowPathMatchers) {
         return traverseMatchFromTop(match, bodyElt, allowMismatchedContent);
       }
     } catch (e) {
       log("Exception executing match", match, e);
-      return null;
     }
+    return [];
   };
+
+  /**
+   * Tests whether an element has a class="cr-tag" match tag.
+   */
+  me.hasMatchTag = function(elt) {
+    return tagClassPattern.test(elt.className);
+  }
 };
 
 ///// Implementation /////
@@ -94,7 +101,7 @@ function classMatcherForElt(eltToMatch, origContent) {
 }
 
 // Traces a match from a top node, seeking matching leaf.
-// Returns an array with a single element, or null.
+// Returns an array with zero or one element.
 function traverseMatchFromTop(match, top, allowMismatchedContent) {
   var pathFromTop = match.slice();
   pathFromTop.reverse();
@@ -130,7 +137,7 @@ function traverseMatchFromTop(match, top, allowMismatchedContent) {
       " but was " + hashHtml(el.innerHTML)/* + ", " + el.innerHTML*/);
     el = null;
   }
-  return (el != null) ? [el] : null;
+  return (el != null) ? [el] : [];
 }
 
 function findClassMatches(match, top) {

@@ -30,9 +30,9 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   /** Applies content to DOM and installs observer. */
-  function applyContentAndWatchDom() {
-    doApplyContent();
-    watchDom();
+  function applyContentAndWatchDom(allowPathMatchers) {
+    doApplyContent(allowPathMatchers);
+    watchDom(allowPathMatchers);
   }
 
   /** Returns the current injected content. */
@@ -41,11 +41,11 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   /** Reverts changes, then applies the argument (or previously set) content. */
-  function applyContent(contentOrNull, allowMismatchedContent) {
+  function applyContent(contentOrNull, allowPathMatchers, allowMismatchedContent) {
     var content = contentOrNull || injectedContent;
     revertContent();
     setContent(content);
-    doApplyContent(allowMismatchedContent);
+    doApplyContent(allowPathMatchers, allowMismatchedContent);
   }
 
   /** Reverts all changes in DOM and sets content to no changes. Returns the new (empty) content. */
@@ -114,9 +114,9 @@ module.exports = function createInjector(document, MutationObserver) {
     }
   }
 
-  function doApplyContent(allowMismatchedContent) {
+  function doApplyContent(allowPathMatchers, allowMismatchedContent) {
     foreach(injectedContent.changes, function(key, spec) {
-      var elts = matcher().findElements(spec.match, allowMismatchedContent);
+      var elts = matcher().findElements(spec.match, allowPathMatchers, allowMismatchedContent);
       if (elts) {
         for (var i = 0; i < elts.length; ++i) {
           log("Injecting new content for key " + key, spec /*, elts[i]*/);
@@ -179,7 +179,7 @@ module.exports = function createInjector(document, MutationObserver) {
   }
 
   var _isWatching = false;
-  function watchDom() {
+  function watchDom(allowPathMatchers) {
     if (_isWatching) { return; }
     _isWatching = true;
 
@@ -224,7 +224,7 @@ module.exports = function createInjector(document, MutationObserver) {
         foreach(injectedContent.changes, function(key, spec) {
           // NOTE(alex): This generates "mismatched content" messages when responding to mutations that are
           // CR injecting content.
-          var elts = matcher().findElements(spec.match) || [];
+          var elts = matcher().findElements(spec.match, allowPathMatchers) || [];
           for (var i = 0; i < elts.length; ++i) {
             if (!!addedNodeSet[elts[i]]) {
               injectContent(elts[i], key, spec.content);
@@ -252,6 +252,8 @@ module.exports = function createInjector(document, MutationObserver) {
     updateElement: updateElement,
     revertElement: revertElement,
     revertContent: revertContent,
+
+    hasMatchTag: function(el) { return matcher().hasMatchTag(el) },
 
     // Visible for testing
     matcher: matcher

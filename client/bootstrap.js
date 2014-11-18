@@ -73,6 +73,8 @@ var env = {
   }
 };
 
+var injector = createInjector(document, MutationObserver);
+
 var editorApp;
 function showEditor() {
   if (!editorApp) {
@@ -86,8 +88,6 @@ function showEditor() {
   }
 }
 
-var injector = createInjector(document, MutationObserver);
-
 // Export to window
 window.copyraptor = {
   setContent: injector.setContent,
@@ -96,7 +96,7 @@ window.copyraptor = {
 
 document.addEventListener("DOMContentLoaded", function() {
   log("DOMContentLoaded");
-  injector.applyContentAndWatchDom();
+  injector.applyContentAndWatchDom(env.params().auto);
 
   if (env.params().edit) {
     showEditor();
@@ -111,7 +111,7 @@ if (env.params().site !== undefined) {
     el.setAttribute("src", env.contentSrc('live', env.params().cachebust));
     document.head.appendChild(el);
     el.onload = function() {
-      injector.applyContentAndWatchDom();
+      injector.applyContentAndWatchDom(env.params().auto);
     };
     // There is sadly no way to to detect the 404 error if this content does not yet exist, so no trigger
     // to display the editor.

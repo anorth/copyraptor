@@ -39,7 +39,7 @@ describe('Injection tests', function() {
     return dom.then(function(window) {
       body.innerHTML = '<p>Initial</p>';
 
-      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"));
+      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"), true);
       expect(body.innerHTML).toEqual('<p>Replaced</p>');
     })
   }));
@@ -48,7 +48,8 @@ describe('Injection tests', function() {
     return dom.then(function(window) {
       body.innerHTML = '<p>Initial</p>';
 
-      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"));
+      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"), true);
+      expect(body.innerHTML).toEqual('<p>Replaced</p>');
       injector.revertElement(body.children[0]);
 
       expect(body.innerHTML).toEqual('<p>Initial</p>');
@@ -60,17 +61,8 @@ describe('Injection tests', function() {
       body.innerHTML = '<p>A</p><p>B</p>';
 
       injector.applyContent(changeSpec().withText(body.children[0], "Replaced")
-          .withText(body.children[1], "Also replaced"));
+          .withText(body.children[1], "Also replaced"), true);
       expect(body.innerHTML).toEqual('<p>Replaced</p><p>Also replaced</p>');
-    })
-  }));
-
-  it('should inject many text contents with same class matcher', util.promised(function() {
-    return dom.then(function(window) {
-      body.innerHTML = '<p class="cr-tag">A</p><p class="cr-tag someclass">B</p>';
-
-      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"));
-      expect(body.innerHTML).toEqual('<p class="cr-tag">Replaced</p><p class="cr-tag someclass">Replaced</p>');
     })
   }));
 
@@ -79,10 +71,21 @@ describe('Injection tests', function() {
       body.innerHTML = '<p>A</p><p>B</p>';
 
       injector.applyContent(changeSpec().withText(body.children[0], "Replaced")
-          .withText(body.children[1], "Also replaced"));
+          .withText(body.children[1], "Also replaced"), true);
+      expect(body.innerHTML).toEqual('<p>Replaced</p><p>Also replaced</p>');
       injector.revertContent();
 
       expect(body.innerHTML).toEqual('<p>A</p><p>B</p>');
+    })
+  }));
+
+
+  it('should inject many text contents with same class matcher', util.promised(function() {
+    return dom.then(function(window) {
+      body.innerHTML = '<p class="cr-tag">A</p><p class="cr-tag someclass">B</p>';
+
+      injector.applyContent(changeSpec().withText(body.children[0], "Replaced"), false);
+      expect(body.innerHTML).toEqual('<p class="cr-tag">Replaced</p><p class="cr-tag someclass">Replaced</p>');
     })
   }));
 

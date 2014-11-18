@@ -59,14 +59,14 @@ function EditorApp(injector, env, editable) {
     editor.detach();
 
     if (state == VIEWSTATE.PUBLISHED) {
-      injector.applyContent(publishedState, true);
+      injector.applyContent(publishedState, env.params().auto, true);
       publishedButton.className = 'active';
       draftButton.className = '';
       hide(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton, saveStateText);
       editable = false;
     } else {
       assert(draftState, "No draft state");
-      injector.applyContent(draftState, true);
+      injector.applyContent(draftState, env.params().auto, true);
       draftButton.className = 'active';
       publishedButton.className = '';
       show(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton);
@@ -100,7 +100,7 @@ function EditorApp(injector, env, editable) {
       assert(editable, "Can't revert from published view");
       editor.detach();
       draftState = util.cloneJson(publishedState);
-      injector.applyContent(draftState);
+      injector.applyContent(draftState, env.params().auto);
       autoSave();
     }
   });
@@ -276,33 +276,43 @@ function EditorApp(injector, env, editable) {
       return;
     }
 
-    tryFocusElem(elem);
+    tryFocusElem(elem, env.params().auto);
   }
 
-  function tryFocusElem(elem) {
-    // Top down
+  function tryFocusElem(target, usePath) {
     var ancestors = [];
+    var elem = target;
+
+    // Construct ancestor list while looking for for class="cr-tag"
     while (elem != null) {
+      if (injector.hasMatchTag(elem)) {
+        focusRect.wrap(elem);
+        return
+      }
       ancestors.push(elem);
       elem = elem.parentNode;
     }
-    ancestors.reverse();
-    for (var i = 0; i < ancestors.length; ++i) {
-      if (hasNonWhiteTextNodes(ancestors[i])) {
-        focusRect.wrap(ancestors[i]);
-        return;
-      }
-    }
 
-    // Bottom up (old way)
-    //while (elem != null) {
-    //  if (isSuitableForEditing(elem)) {
-    //    focusRect.wrap(elem);
-    //    return;
-    //  }
-    //
-    //  elem = elem.parentNode;
-    //}
+    if (usePath) {
+      // Top down
+      ancestors.reverse();
+      for (var i = 0; i < ancestors.length; ++i) {
+        if (hasNonWhiteTextNodes(ancestors[i])) {
+          focusRect.wrap(ancestors[i]);
+          return;
+        }
+      }
+
+      // Bottom up (old way)
+      //while (elem != null) {
+      //  if (isSuitableForEditing(elem)) {
+      //    focusRect.wrap(elem);
+      //    return;
+      //  }
+      //
+      //  elem = elem.parentNode;
+      //}
+    }
   }
 
   function leaveElem() {
@@ -341,30 +351,30 @@ function EditorApp(injector, env, editable) {
   }
 
   function tryEdit(elem) {
-    tryFocusElem(elem);
+    tryFocusElem(elem, env.params().auto);
     if (util.isOrHasChild(focusRect.wrapped, elem)) {
       editor.attach(focusRect.wrapped);
       return true;
     }
   }
 
-  function isSuitableForEditing(elem) {
-    var isCandidate = isIntrinsicallySuitable(elem);
-    var containsCandidate = util.descendantMatches(elem, isIntrinsicallySuitable);
-
-    return isCandidate && !containsCandidate;
-  }
-
-  function isIntrinsicallySuitable(node) {
-    if (node.nodeType !== 1) { // ELEMENT_NODE
-      return;
-    }
-
-    var displayIsSuitable = EDITABLE_DISPLAY_VALUES.indexOf(util.displayType(node)) != -1;
-    var tagNameIsSuitable = NON_EDITABLE_TAGS.indexOf(node.tagName) == -1;
-
-    return displayIsSuitable && tagNameIsSuitable;
-  }
+  //function isSuitableForEditing(elem) {
+  //  var isCandidate = isIntrinsicallySuitable(elem);
+  //  var containsCandidate = util.descendantMatches(elem, isIntrinsicallySuitable);
+  //
+  //  return isCandidate && !containsCandidate;
+  //}
+  //
+  //function isIntrinsicallySuitable(node) {
+  //  if (node.nodeType !== 1) { // ELEMENT_NODE
+  //    return;
+  //  }
+  //
+  //  var displayIsSuitable = EDITABLE_DISPLAY_VALUES.indexOf(util.displayType(node)) != -1;
+  //  var tagNameIsSuitable = NON_EDITABLE_TAGS.indexOf(node.tagName) == -1;
+  //
+  //  return displayIsSuitable && tagNameIsSuitable;
+  //}
 
   function hasNonWhiteTextNodes(elem) {
     var child = elem.firstChild;

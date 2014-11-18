@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>DOM Change Test</title>
-  <script src="http://localhost:5544/build/copyraptor.js" data-copyraptor-site="injectordemo" data-copyraptor-edit></script>
+  <script src="http://localhost:5544/build/copyraptor.js" data-copyraptor-site="injectordemo" data-copyraptor-edit data-copyraptor-auto></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -16,7 +16,6 @@
         newP = newP.cloneNode(true);
         newP.setAttribute("id", "p-" + nextId);
         nextId++;
-//        console.log(newP);
         document.querySelector("#content").appendChild(newP);
       });
     });
