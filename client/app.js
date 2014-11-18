@@ -25,16 +25,15 @@ var Editor = require('./editor');
 var FocusRect = require('./focus-rect');
 
 module.exports = EditorApp;
-function EditorApp(injector, env, editable) {
+function EditorApp(injector, env, delegate) {
   assert(injector);
   assert(env);
-  assert(typeof editable == 'boolean');
-  editable = !!editable;
 
   var apiBase = env.apiPath();
 
   var service = new CopyraptorService(apiBase, env.params().site, env.contentSrc);
   var me = this;
+  var editable;
 
   var focusRect = new FocusRect();
   var viewState, saveState;
@@ -130,6 +129,10 @@ function EditorApp(injector, env, editable) {
 
   var draftButton = util.button('Draft copy', {className: 'draft'}, function() {
     setViewState(VIEWSTATE.DRAFT);
+  });
+
+  var closeButton = util.button('×', {className: 'close'}, function() {
+    me.hideToolbar();
   });
 
   function init() {
@@ -242,6 +245,7 @@ function EditorApp(injector, env, editable) {
               //editableCheckbox
           ),
 
+          closeButton,
           saveStateText
       ),
       loginDiv,
@@ -250,11 +254,17 @@ function EditorApp(injector, env, editable) {
 
   me.displayToolbar = function() {
     if (me.elem.parentNode) {
+      me.elem.style.display = 'block';
       return;
     }
 
     document.body.appendChild(
         util.divc('copyraptor-app', me));
+  };
+
+  me.hideToolbar = function() {
+    me.elem.style.display = 'none';
+    delegate.hidden();
   };
 
   function hide(elms) {

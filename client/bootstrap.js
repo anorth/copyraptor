@@ -75,12 +75,18 @@ var env = {
 
 var injector = createInjector(document, MutationObserver);
 
+var editorDelegate = {
+  hidden: function() {
+    sessionStorage.removeItem('copyraptor-edit');
+  }
+};
+
 var editorApp;
 function showEditor() {
   if (!editorApp) {
     require.ensure(['./editor'], function(require) {
       var EditorApp = require('./app');
-      editorApp = new EditorApp(injector, env, true);
+      editorApp = new EditorApp(injector, env, editorDelegate);
       editorApp.displayToolbar();
     });
   } else {
@@ -98,8 +104,9 @@ document.addEventListener("DOMContentLoaded", function() {
   log("DOMContentLoaded");
   injector.applyContentAndWatchDom(env.params().auto);
 
-  if (env.params().edit) {
+  if (env.params().edit || sessionStorage.getItem('copyraptor-edit')) {
     showEditor();
+    sessionStorage.setItem('copyraptor-edit', 1);
   }
 });
 
