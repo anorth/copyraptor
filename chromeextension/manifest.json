@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Copyraptor demo",
   "description": "Injects Copyraptor script into a page for demonstration.",
-  "version": "1.0",
+  "version": "1.1",
 
   "permissions": [ "activeTab", "storage" ],
   "options_page": "options.html",
