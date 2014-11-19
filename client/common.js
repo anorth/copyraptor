@@ -1,6 +1,8 @@
 /* Shared utils between injector and app */
-with(exports) {
 
+exports.CONTENT_CACHE_TIME_MS = 60 * 60 * 1000;
+
+with(exports) {
 var assert = exports.assert = function(truth, msg) {
   if (!truth) {
     var info = Array.prototype.slice.call(arguments, 1);
@@ -8,7 +10,6 @@ var assert = exports.assert = function(truth, msg) {
   }
   return truth;
 };
-
 
 exports.isVanillaObj = function(x) {
   return typeof x === 'object' && x.constructor == Object;
@@ -62,7 +63,7 @@ exports.queryParams = function() {
     if(!part) return;
     var item = part.split("=");
     var key = item[0];
-    result[key] = decodeURIComponent(item[1]);
+    result[key] = item.length == 2 ? decodeURIComponent(item[1]) : true;
    });
   return result;
 };
@@ -96,6 +97,9 @@ exports.log = function() {
 };
 exports.warn = function() {
   console.warn.apply(console, logargs(arguments));
+};
+exports.error = function() {
+  console.error.apply(console, logargs(arguments));
 };
 
 function logargs(args) {

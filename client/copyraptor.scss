@@ -108,6 +108,12 @@ $button-green: #009600;
       }
     }
 
+    >.loading {
+      display: inline-block;
+      padding-left: 40px;
+      padding-top: 20px;
+    }
+
     .controls {
       display: inline-block;
       padding-left: 40px;
@@ -208,7 +214,7 @@ $button-green: #009600;
   .left.focus-rect-segment:after {
     top: -12px;
     bottom: 12px;
-    background: linear-gradient(to left, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+//    background: linear-gradient(to left, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
     background: linear-gradient(to left, black, rgba(0,0,0,0));
     transform: skew(0deg, -63.43deg);
   }
@@ -219,7 +225,7 @@ $button-green: #009600;
   .right.focus-rect-segment:after {
     top: -12px;
     bottom: 12px;
-    background: linear-gradient(to right, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+//    background: linear-gradient(to right, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
     background: linear-gradient(to right, black, rgba(0,0,0,0));
     transform: skew(0deg, 63.43deg);
   }
@@ -230,7 +236,7 @@ $button-green: #009600;
   .top.focus-rect-segment:after {
     left: -12px;
     right: 12px;
-    background: linear-gradient(to top, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+//    background: linear-gradient(to top, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
     background: linear-gradient(to top, black, rgba(0,0,0,0));
     transform: skew(-63.43deg, 0deg);
   }
@@ -241,7 +247,7 @@ $button-green: #009600;
   .bottom.focus-rect-segment:after {
     left: -12px;
     right: 12px;
-    background: linear-gradient(to bottom, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
+//    background: linear-gradient(to bottom, rgb(178, 211, 255), rgb(178, 211, 255), rgba(0,0,0,0));
     background: linear-gradient(to bottom, black, rgba(0,0,0,0));
     transform: skew(63.43deg, 0deg);
   }

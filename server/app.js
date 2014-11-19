@@ -32,7 +32,7 @@ function setCorsHeaders(req, res) {
   var origin = req.get('Origin');
   if (origin) {
     requestHeaders = req.get('Access-Control-Request-Headers');
-    res.set('Access-Control-Allow-Origin', req.get('Origin'));
+    res.set('Access-Control-Allow-Origin', origin);
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET, POST');
 
@@ -105,11 +105,12 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
     });
   }).then(function() {
     return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
-     Bucket: config.AWS.bucket, 
-     Key: bucketKey,
-     Expires: 60 * 5, // 5 minutes,
-     ContentType: req.body.contentType,
-     ACL: 'public-read'
+      Bucket: config.AWS.bucket,
+      Key: bucketKey,
+      ContentType: req.body.contentType,
+      CacheControl: req.body.cacheControl,
+      Expires: 60 * 5, // 5 minutes,
+      ACL: 'public-read'
     });
   }).then(function(url) {
     console.log(bucketKey + " -> " + url);

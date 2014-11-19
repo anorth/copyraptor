@@ -1,6 +1,6 @@
 var util = require('./apputil');
 
-var assert = util.assert;
+var assert = util.assert, log = util.log;
 
 // TODO: refactor parts of injector vs this service
 module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
@@ -34,25 +34,30 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
   }
 
   this.save = function(content, version) {
-    var payload = makePayload(content);
-
     // Could maybe do per-user or whatever fancy versions later.
     assert(version === 'draft' || version === 'live');
+
+    var payload = makePayload(content);
+    var cacheSecs = util.CONTENT_CACHE_TIME_MS / 1000;
+    var cacheControl = 'public, max-age=' + cacheSecs + ', s-maxage=' + cacheSecs;
 
     return util.http("POST", apiBase + '/upload-url', {
         headers: {'Content-Type': 'application/json'},
         withCredentials: true
-    })
-    .send(JSON.stringify({
+    }).send(JSON.stringify({
       sitekey: sitekey,
       version: version,
+      cacheControl: cacheControl,
       contentType: 'application/javascript'
     })).then(function(resp) {
-      console.log("Saving", payload);
-      
+      log("Saving", content);
       var putUrl = JSON.parse(resp.responseText).putUrl;
+      var headers = {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': cacheControl // needed in headers as well as signed request params
+      };
       return util.http("PUT", putUrl, {
-        headers: {'Content-Type': 'application/javascript'}
+        headers: headers
       }).send(payload);
     });
   };

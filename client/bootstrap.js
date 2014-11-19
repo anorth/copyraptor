@@ -78,6 +78,10 @@ var injector = createInjector(document, MutationObserver);
 var editorDelegate = {
   hidden: function() {
     sessionStorage.removeItem('copyraptor-edit');
+  },
+  published: function() {
+    log("Published!");
+    localStorage.setItem('copyraptor-bustuntil', new Date().getTime() + util.CONTENT_CACHE_TIME_MS);
   }
 };
 
@@ -104,18 +108,25 @@ document.addEventListener("DOMContentLoaded", function() {
   log("DOMContentLoaded");
   injector.applyContentAndWatchDom(env.params().auto);
 
-  if (env.params().edit || sessionStorage.getItem('copyraptor-edit')) {
+  if (env.params()['edit'] || sessionStorage.getItem('copyraptor-edit')) {
     showEditor();
     sessionStorage.setItem('copyraptor-edit', 1);
   }
 });
 
-// Insert a script element after this to load the content synchronously
+// Insert a script element after this to load the content, synchronously unless too late or requested otherwise
+try {
+  var bustUntil = new Date(parseInt(localStorage.getItem('copyraptor-bustuntil')) || 0);
+  var cachebust = env.params()['cachebust'] || bustUntil.getTime() > Date.now();
+  if (cachebust) { log("Busting cache until " + bustUntil) }
+} catch (e) {
+  error(e);
+}
 if (env.params().site !== undefined) {
   if (env.params().async || (/loaded|complete|interactive/.test(document.readyState))) {
     var el = document.createElement("script");
     el.setAttribute("type", "text/javascript");
-    el.setAttribute("src", env.contentSrc('live', env.params().cachebust));
+    el.setAttribute("src", env.contentSrc('live', cachebust));
     document.head.appendChild(el);
     el.onload = function() {
       injector.applyContentAndWatchDom(env.params().auto);
@@ -127,6 +138,6 @@ if (env.params().site !== undefined) {
     }, 2000);
   } else {
     // appendChild-style DOM manipulation does not execute the script synchronously.
-    document.write('<script type="text/javascript" src="' + env.contentSrc('live') + '"></script>');
+    document.write('<script type="text/javascript" src="' + env.contentSrc('live', cachebust) + '"></script>');
   }
 }

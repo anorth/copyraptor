@@ -1,5 +1,5 @@
 var util = require('./apputil');
-var log=util.log, assert=util.assert;
+var log=util.log, warn=util.warn, error=util.error, assert=util.assert;
 var CopyraptorService = require('./service.js');
 
 // TODO(alex): More from http://www.quackit.com/html/tags/ or http://www.w3.org/TR/html51/
@@ -33,7 +33,7 @@ function EditorApp(injector, env, delegate) {
 
   var service = new CopyraptorService(apiBase, env.params().site, env.contentSrc);
   var me = this;
-  var editable;
+  var editable = false;
 
   var focusRect = new FocusRect();
   var viewState, saveState;
@@ -41,16 +41,18 @@ function EditorApp(injector, env, delegate) {
   var saveStateText = util.divc('savestate');
 
   var draftState = null;
-  var publishedState = injector.getContent(); // TODO(alex): Re-load with cache buster & set cookie to do so
-  service.load('draft').then(function(content) {
-    draftState = content || util.cloneJson(publishedState);
+  var publishedState = null;
+  // Re-load content just in case the CDN had an out of date version, then fetch draft state and initialise editor.
+  service.load('live').then(function(liveContent) {
+    publishedState = liveContent || injector.getContent();
     setViewState(VIEWSTATE.PUBLISHED);
+  }).then(function() {
+    return service.load('draft');
+  }).then(function(draftContent) {
+    draftState = draftContent || util.cloneJson(publishedState);
     util.removeNode(loadingMsg);
     init();
-  }).catch(function(err) {
-    console.error(err);
-  });
-
+  }).catch(error);
 
   function setViewState(state) {
     assert(VIEWSTATE[state]);
@@ -58,14 +60,14 @@ function EditorApp(injector, env, delegate) {
     editor.detach();
 
     if (state == VIEWSTATE.PUBLISHED) {
-      injector.applyContent(publishedState, env.params().auto, true);
+      injector.applyContent(publishedState, env.params()['auto'], true);
       publishedButton.className = 'active';
       draftButton.className = '';
       hide(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton, saveStateText);
       editable = false;
     } else {
       assert(draftState, "No draft state");
-      injector.applyContent(draftState, env.params().auto, true);
+      injector.applyContent(draftState, env.params()['auto'], true);
       draftButton.className = 'active';
       publishedButton.className = '';
       show(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton);
@@ -99,7 +101,7 @@ function EditorApp(injector, env, delegate) {
       assert(editable, "Can't revert from published view");
       editor.detach();
       draftState = util.cloneJson(publishedState);
-      injector.applyContent(draftState, env.params().auto);
+      injector.applyContent(draftState, env.params()['auto']);
       autoSave();
     }
   });
@@ -119,10 +121,12 @@ function EditorApp(injector, env, delegate) {
     // Could use Q.all, but perhaps best to save in order so draft always > live.
     return save('live').then(function () {
       publishedState = util.cloneJson(content);
+      delegate.published();
     });
   });
 
-  // Quick hack toggle button for now.
+  var loadingMsg = util.divc('loading', 'Loading raptor teeth...');
+
   var publishedButton = util.button('Published copy', {className: 'published'}, function() {
     setViewState(VIEWSTATE.PUBLISHED);
   });
@@ -225,11 +229,10 @@ function EditorApp(injector, env, delegate) {
   }
 
   var controls;
-  var loadingMsg;
 
   me.elem = util.divc('main-panel',
       util.h1('Copyraptor'),
-      loadingMsg = util.divc('controls', 'Loading...'),
+      loadingMsg,
       controls = util.divc('controls', {style: {display: 'none'}}, // initially hidden
           util.divc('viewstate',
               util.label('', 'Showing:'),
@@ -286,7 +289,7 @@ function EditorApp(injector, env, delegate) {
       return;
     }
 
-    tryFocusElem(elem, env.params().auto);
+    tryFocusElem(elem, env.params()['auto']);
   }
 
   function tryFocusElem(target, usePath) {
@@ -361,7 +364,7 @@ function EditorApp(injector, env, delegate) {
   }
 
   function tryEdit(elem) {
-    tryFocusElem(elem, env.params().auto);
+    tryFocusElem(elem, env.params()['auto']);
     if (util.isOrHasChild(focusRect.wrapped, elem)) {
       editor.attach(focusRect.wrapped);
       return true;
