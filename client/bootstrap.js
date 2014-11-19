@@ -5,7 +5,7 @@ var warn = util.warn;
 var createInjector = require('./injector');
 
 var urlScheme = (document.location.protocol === 'https:') ? 'https://' : 'http://';
-var params = {site: undefined}, staticPath, serverPath, contentBlobHost, contentCdnHost, i;
+var params = {site: undefined}, staticPath, serverPath, contentCdnHost, i;
 
 // Find the script element that loaded this script to extract the site id
 var tags = document.head.querySelectorAll("script");
@@ -43,10 +43,9 @@ if (staticPath) {
   var staticHost = m[2];
   if (staticHost.slice(0, 9) === 'localhost') {
     serverPath = 'http://localhost:3000';
-    contentBlobHost = contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
+    contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
   } else {
     serverPath = urlScheme + 'www.copyraptor.com';
-    contentBlobHost = 'com.copyraptor.content.s3-us-west-2.amazonaws.com';
     contentCdnHost = 'content.copyraptor.com';
   }
 
@@ -60,12 +59,9 @@ var env = {
   staticPath: function() { return staticPath; },
   serverPath: function() { return serverPath; },
   apiPath: function() { return serverPath + "/api"; },
-  contentBlobHost: function() { return contentBlobHost; },
-  contentCdnHost: function() { return contentCdnHost; },
   contentSrc: function(version, cacheBust) {
     assert(version);
-    var url = urlScheme + (params.edit ? contentBlobHost : contentCdnHost) +
-        '/' + params.site + '/' + version;
+    var url = urlScheme + contentCdnHost + '/' + params.site + '/' + version;
     if (cacheBust) {
       url += "?bust=" + Math.round(new Date().getTime() / 1000);
     }
