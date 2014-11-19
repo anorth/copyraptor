@@ -3,8 +3,8 @@ var log=util.log, warn=util.warn, error=util.error, assert=util.assert;
 var CopyraptorService = require('./service.js');
 
 // TODO(alex): More from http://www.quackit.com/html/tags/ or http://www.w3.org/TR/html51/
-var NON_EDITABLE_TAGS = ['IMG'];
-var EDITABLE_DISPLAY_VALUES = ['block', 'inline-block', 'list-item', 'table-cell', 'table-caption'];
+//var NON_EDITABLE_TAGS = ['IMG'];
+//var EDITABLE_DISPLAY_VALUES = ['block', 'inline-block', 'list-item', 'table-cell', 'table-caption'];
 
 var SAVESTATE = {
   UNSAVED: 'UNSAVED',
@@ -270,13 +270,13 @@ function EditorApp(injector, env, delegate) {
     delegate.hidden();
   };
 
-  function hide(elms) {
+  function hide(/*elms...*/) {
     for (var i = 0; i < arguments.length; ++i) {
       arguments[i].style.display = "none";
     }
   }
 
-  function show(elms) {
+  function show(/*elms...*/) {
     for (var i = 0; i < arguments.length; ++i) {
       arguments[i].style.display = "";
     }

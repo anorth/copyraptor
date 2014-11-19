@@ -174,7 +174,7 @@ exports.http = function http(method, url, config) {
     });
   }
   xhr.withCredentials = !!config.withCredentials;
-  xhr.onload = function (e) {
+  xhr.onload = function () {
     if (this.status == 200) {
       defer.resolve(this);
     } else {

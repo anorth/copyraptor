@@ -3,7 +3,7 @@
 exports.CONTENT_CACHE_TIME_MS = 60 * 60 * 1000;
 
 with(exports) {
-var assert = exports.assert = function(truth, msg) {
+var assert = exports.assert = function(truth /* msg... */) {
   if (!truth) {
     var info = Array.prototype.slice.call(arguments, 1);
     throw new Error('Assertion failed' + (info.length > 0 ? ': ' + info.join(' ') : '!'));

@@ -5,7 +5,6 @@
 
 var util = require('./common');
 var assert = util.assert;
-var foreach = util.foreach;
 var log = util.log;
 var warn = util.warn;
 
@@ -27,7 +26,7 @@ module.exports = function Matcher(bodyElt) {
   me.matcherForElt = function(eltToMatch, origContent) {
     assert(eltToMatch != bodyElt);
     if (tagClassPattern.test(eltToMatch.className)) {
-      return classMatcherForElt(eltToMatch, origContent);
+      return classMatcherForElt(eltToMatch);
     } else {
       return pathMatcherForElt(eltToMatch, origContent, bodyElt);
     }
@@ -88,7 +87,7 @@ function pathMatcherForElt(eltToMatch, origContent, bodyElt) {
   return path;
 }
 
-function classMatcherForElt(eltToMatch, origContent) {
+function classMatcherForElt(eltToMatch) {
   var match = tagClassPattern.exec(eltToMatch.className);
   if (match != null) {
     var tag = match[1].substr(3); // Just use the first tag class
