@@ -4,7 +4,10 @@ var Q = require('q');
 var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './config');
 var bodyParser = require('body-parser');
 var session = require('cookie-session');
-var AWS = require('aws-sdk'); 
+var AWS = require('aws-sdk');
+
+var Mandrill = require('mandrill-api/mandrill');
+var mandrill = new Mandrill.Mandrill();
 
 app.set('config', config);
 
@@ -26,26 +29,53 @@ app.use(session({
   secret: config.APP_SECRET
 }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(__dirname + '/static'));
 
-function setCorsHeaders(req, res) {
-  var origin = req.get('Origin');
-  if (origin) {
-    requestHeaders = req.get('Access-Control-Request-Headers');
-    res.set('Access-Control-Allow-Origin', origin);
-    res.set('Access-Control-Allow-Credentials', 'true');
-    res.set('Access-Control-Allow-Methods', 'GET, POST');
-
-    if (requestHeaders) {
-      res.set('Access-Control-Allow-Headers', requestHeaders);
-    }
-  }
-}
 
 app.options(/\/api\/.*/, requestHandler(function(req, res) {
   setCorsHeaders(req, res);
   res.send();
   return Q.resolve();
+}));
+
+app.post('/signup', requestHandler(function(req, res) {
+  return Q.resolve().then(function() {
+    var signupName = req.body.name || "";
+    var signupEmail = req.body.email || "";
+    var signupSite = req.body.site || "";
+    var signupMessage = req.body.message || "";
+
+    var messageContent = "New Copyraptor signup!\n\n" +
+        "Name: " + signupName + "\n" +
+        "Email: " + signupEmail + "\n" +
+        "Site: " + signupSite + "\n\n" +
+        "Message:\n" + signupMessage +"\n";
+
+    var message = {
+      "subject": "Copyraptor signup: " + signupSite,
+      "text": messageContent,
+      "from_email": "website@copyraptor.com",
+      "from_name": "Copyraptor",
+      "to": [{
+        "email": "alex@firstorder.com.au",
+        "type": "to"
+      }],
+      "headers": {
+        "Reply-To": signupEmail
+      },
+      //"bcc_address": "message.bcc_address@example.com",
+      "important": false
+    };
+
+    mandrill.messages.send({"message": message, "async": false}, function(result) {
+      console.log("Signup email sent", result);
+      return res.redirect("thanks.html");
+    }, function(e) {
+      console.log("Mandrill error: " + e.name + ", " + e.message);
+      return res.redirect("thanks.html");
+    });
+  });
 }));
 
 app.post('/api/login', requestHandler(function(req, res) {
@@ -117,6 +147,24 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
     res.send({putUrl: url});
   });
 }));
+
+function setCorsHeaders(req, res) {
+  var origin = req.get('Origin');
+  if (origin) {
+    requestHeaders = req.get('Access-Control-Request-Headers');
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+
+    if (requestHeaders) {
+      res.set('Access-Control-Allow-Headers', requestHeaders);
+    }
+  }
+}
+
+mandrill.users.info(function(info) {
+  console.log('Mandrill reputation: ' + info.reputation + ', Hourly Quota: ' + info.hourly_quota);
+});
 
 console.log("Listening on " + process.env.PORT);
 app.listen(process.env.PORT);

@@ -10,7 +10,8 @@
     "lodash": "2.4.1",
     "cookie-session": "1.0.2",
     "aws-sdk": "2.0.23",
-    "body-parser": "1.9.2"
+    "body-parser": "1.9.2",
+    "mandrill-api":"1.0.41"
   },
   "devDependencies": {
     "webpack": "1.4.9",
