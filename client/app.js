@@ -45,11 +45,12 @@ function EditorApp(injector, env, delegate) {
   // Re-load content just in case the CDN had an out of date version, then fetch draft state and initialise editor.
   service.load('live').then(function(liveContent) {
     publishedState = liveContent || injector.getContent();
-    setViewState(VIEWSTATE.PUBLISHED);
+    if (liveContent != null) { setViewState(VIEWSTATE.PUBLISHED); }
   }).then(function() {
     return service.load('draft');
   }).then(function(draftContent) {
     draftState = draftContent || util.cloneJson(publishedState);
+    if (!viewState) { setViewState(VIEWSTATE.DRAFT); } // Straight to draft mode for first-time use
     util.removeNode(loadingMsg);
     init();
   }).catch(error);

@@ -174,6 +174,36 @@ describe('Matcher tests', function () {
     });
   }));
 
+  it('should match all tagged elements', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="cr-a">Hello</div><div class="cr-a">World</div><div class="cr-a">Again</div>';
+
+      var m = matcher.matcherForElt(body.children[0]);
+      expect(m[0].tg).toBeDefined();
+
+      expect(matcher.findElements(m, false).length).toBe(3);
+      for (var i = 0; i < 3; ++i) {
+        expect(matcher.findElements(m, false)[i]).toBe(body.children[i]);
+      }
+    });
+  }));
+
+
+  it('should match tagged and path elements in one change set', util.promised(function () {
+    return dom.then(function(window) {
+      body.innerHTML = '<div class="cr-a">Hello</div><div>World</div><div class="blah">Again</div>';
+      var elA = body.children[0];
+      var elB = body.children[1];
+
+      var mA = matcher.matcherForElt(elA);
+      var mB = matcher.matcherForElt(elB);
+
+      expect(matcher.findElements(mA, true)[0]).toBe(elA);
+      expect(matcher.findElements(mB, true)[0]).toBe(elB);
+    });
+  }));
+
+
 });
 
 

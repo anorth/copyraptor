@@ -52,7 +52,7 @@ if (staticPath) {
   __webpack_require__.p = staticPath + '/';
 }
 
-log("Params: ", params);
+log("Configuration: ", params);
 
 var env = {
   params: function() { return params; },
@@ -102,7 +102,7 @@ window.copyraptor = {
 
 document.addEventListener("DOMContentLoaded", function() {
   log("DOMContentLoaded");
-  injector.applyContentAndWatchDom(env.params().auto);
+  injector.applyContentAndWatchDom(env.params()['auto']);
 
   if (env.params()['edit'] || sessionStorage.getItem('copyraptor-edit')) {
     showEditor();
@@ -119,7 +119,7 @@ try {
   error(e);
 }
 if (env.params().site !== undefined) {
-  if (env.params().async || (/loaded|complete|interactive/.test(document.readyState))) {
+  if (env.params()['async'] || (/loaded|complete|interactive/.test(document.readyState))) {
     var el = document.createElement("script");
     el.setAttribute("type", "text/javascript");
     el.setAttribute("src", env.contentSrc('live', cachebust));
