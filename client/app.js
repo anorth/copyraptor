@@ -38,7 +38,7 @@ function EditorApp(injector, env, delegate) {
   var focusRect = new FocusRect();
   var viewState, saveState;
 
-  var saveStateText = util.divc('savestate');
+  var statusMessage = util.divc('statusmessage', '');
 
   var draftState = null;
   var publishedState = null;
@@ -64,29 +64,37 @@ function EditorApp(injector, env, delegate) {
       injector.applyContent(publishedState, env.params()['auto'], true);
       publishedButton.className = 'active';
       draftButton.className = '';
-      hide(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton, saveStateText);
+      hide(editorTools);
+      show(editNowButton);
       editable = false;
+      statusMessage.innerText = '';
     } else {
       assert(draftState, "No draft state");
       injector.applyContent(draftState, env.params()['auto'], true);
       draftButton.className = 'active';
       publishedButton.className = '';
-      show(publishButton, editableCheckbox, revertToPublishedButton, revertToBaseButton);
+      show(editorTools);
+      hide(editNowButton);
       editable = true;
+      if (!env.params()['auto']) {
+        statusMessage.innerText = 'Auto-mode disabled, only marked-up elements are editable.';
+      }
     }
   }
 
   setSaveState(SAVESTATE.SAVED);
   function setSaveState(state) {
     assert(SAVESTATE[state]);
-    show(saveStateText);
     if (state == SAVESTATE.SAVED) {
       // don't clobber unsaved state if pending edits while saving.
       assert(saveState != SAVESTATE.UNSAVED);
     }
 
+    if (saveState != null) {
+      statusMessage.innerText = (state == SAVESTATE.SAVED ? 'Draft saved' : 'Saving...');
+    }
+
     saveState = state;
-    saveStateText.innerText = '(' + (state == SAVESTATE.SAVED ? 'Draft saved' : 'Saving...') + ')';
   }
 
   var editableCheckbox = util.checkBox('Enable editing', editable, function(isEditable) {
@@ -126,7 +134,22 @@ function EditorApp(injector, env, delegate) {
     });
   });
 
+  var editorTools = util.divc('editing',
+      publishButton,
+      util.divc('revert',
+          revertToPublishedButton,
+          revertToBaseButton
+      )
+      //editableCheckbox
+  );
+
   var loadingMsg = util.divc('loading', 'Loading raptor teeth...');
+
+  var editNowButton = util.a({className: 'editnow'}, 'Make changes', {
+    onclick: function () {
+      setViewState(VIEWSTATE.DRAFT);
+    }
+  });
 
   var publishedButton = util.button('Published copy', {className: 'published'}, function() {
     setViewState(VIEWSTATE.PUBLISHED);
@@ -240,18 +263,12 @@ function EditorApp(injector, env, delegate) {
               publishedButton,
               draftButton
           ),
-          util.divc('editing',
-              publishButton,
-              util.divc('revert',
-                  revertToPublishedButton,
-                  revertToBaseButton
-              )
-              //editableCheckbox
-          ),
+          editorTools,
 
-          closeButton,
-          saveStateText
+          editNowButton,
+          closeButton
       ),
+      statusMessage,
       loginDiv,
       focusRect
   );
