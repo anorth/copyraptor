@@ -15,6 +15,7 @@ module.exports = {
     "karloliver.com":       { password: 'Cq5P2jW9H57Y34q', email: 'knaoliver@gmail.com', name: "Karl" },
     "growthwebs.com":       { password: 'v33j58t57sAy99W', email: 'andy@andy.mu', name: "Andy Murphy" },
     "vinus.net.au":         { password: 'hAz74hYXFeCG4dY', email: 'alex@getvinus.com', name: "Alex Martell" },
+    "matthewkimberley.com": { password: 'fNJR5sH2SKussdu', email: 'matthew@matthewkimberley.com', name: "Matthew Kimberley" },
 
     // https://strongpasswordgenerator.com/
     "example":              { password: 'FIXME', email: 'example@example.com', name: "name" },
