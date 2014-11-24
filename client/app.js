@@ -222,6 +222,7 @@ function EditorApp(injector, env, delegate) {
             .then(function() {
                 log("Sign in successful");
                 util.removeClass(loginDiv, 'visible');
+                autoSave();
             })
             .catch(function(e) {
                 log("Sign in failed", e);

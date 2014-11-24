@@ -87,16 +87,17 @@ app.options(/\/api\/.*/, requestHandler(function(req, res) {
 app.post('/api/login', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
   return Q.resolve().then(function() {
-    var user = config.USERS[req.body.username];
-    if (!user) {
+    var siteKey = req.body.username;
+    var siteConf = config.USERS[siteKey];
+    if (!siteConf) {
       return res.sendStatus(400);
     }
 
-    if (user.password != req.body.password) {
+    if (siteConf.password != req.body.password) {
       return res.sendStatus(400);
     }
 
-    req.session.user = user;
+    req.session.siteKey = siteKey;
     res.send();
   });
 }));
@@ -114,8 +115,9 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
 
   var bucketKey = siteKey + '/' + version;
 
+  // FIXME: can only log in to one site at a time this way
   var siteUser = config.USERS[siteKey];
-  if (siteUser && !req.session.user) {
+  if (siteUser && siteKey != req.session.siteKey) {
     res.status(401).send();
     return Q.resolve();
   }
