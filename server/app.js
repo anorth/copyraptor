@@ -33,11 +33,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(__dirname + '/static'));
 
 
-app.options(/\/api\/.*/, requestHandler(function(req, res) {
-  setCorsHeaders(req, res);
-  res.send();
-  return Q.resolve();
-}));
+///// Web site /////
 
 app.post('/signup', requestHandler(function(req, res) {
   return Q.resolve().then(function() {
@@ -58,7 +54,7 @@ app.post('/signup', requestHandler(function(req, res) {
       "from_email": "website@copyraptor.com",
       "from_name": "Copyraptor",
       "to": [{
-        "email": "alex@firstorder.com.au",
+        "email": "copyraptor@firstorder.com.au",
         "type": "to"
       }],
       "headers": {
@@ -77,6 +73,16 @@ app.post('/signup', requestHandler(function(req, res) {
     });
   });
 }));
+
+
+///// API /////
+
+app.options(/\/api\/.*/, requestHandler(function(req, res) {
+  setCorsHeaders(req, res);
+  res.send();
+  return Q.resolve();
+}));
+
 
 app.post('/api/login', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
@@ -161,6 +167,8 @@ function setCorsHeaders(req, res) {
     }
   }
 }
+
+///// Bootstrap /////
 
 mandrill.users.info(function(info) {
   console.log('Mandrill reputation: ' + info.reputation + ', Hourly Quota: ' + info.hourly_quota);
