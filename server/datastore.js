@@ -32,6 +32,15 @@ exports.Datastore = function Datastore(url) {
         });
   };
 
+  me.forTesting = {
+    dropData: function() {
+      return oneshot('DELETE FROM site; DELETE FROM account;')
+          .then(function(result) {
+            return true;
+          });
+    }
+  };
+
   /** Returns a promise with [client, done]. Use Q.spread to unpack args. */
   function connect() {
     return Q.Promise(function (resolve, reject) {

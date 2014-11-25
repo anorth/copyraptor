@@ -1,3 +1,7 @@
+-- Create local databases with
+-- createuser copyraptor -P
+-- createdb -E utf8 -O copyraptor copyraptor[_test]
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto; -- for bcrypt
 
 CREATE TABLE account (
