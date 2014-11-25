@@ -45,7 +45,7 @@ if (staticPath) {
     serverPath = 'http://localhost:3000';
     contentCdnHost = 'com.copyraptor.content-dev.s3-us-west-2.amazonaws.com';
   } else {
-    serverPath = urlScheme + 'www.copyraptor.com';
+    serverPath = 'https://' + (params.env === 'stage' ? 'copyraptor-stage.herokuapp.com' : 'www.copyraptor.com');
     contentCdnHost = 'content.copyraptor.com';
   }
 

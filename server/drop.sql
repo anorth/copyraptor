@@ -1,0 +1,3 @@
+DROP VIEW IF EXISTS site_with_owner;
+DROP TABLE IF EXISTS site;
+DROP TABLE IF EXISTS account;

@@ -1,15 +1,21 @@
 var express = require('express');
 var app = express();
+var datastore = require('./datastore');
 var Q = require('q');
 var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './config');
 var bodyParser = require('body-parser');
 var session = require('cookie-session');
 var AWS = require('aws-sdk');
-
 var Mandrill = require('mandrill-api/mandrill');
+
+var store = new datastore.Datastore(process.env.DATABASE_URL);
 var mandrill = new Mandrill.Mandrill();
 
 app.set('config', config);
+
+var SESSION = {
+  SITE_KEY: 'siteKey'
+};
 
 function requestHandler(handler) {
   return function(req, res) {
@@ -84,42 +90,36 @@ app.options(/\/api\/.*/, requestHandler(function(req, res) {
 }));
 
 
-app.post('/api/login', requestHandler(function(req, res) {
+app.post('/api/login', requestHandler(function (req, res) {
   setCorsHeaders(req, res);
-  return Q.resolve().then(function() {
-    var siteKey = req.body.username;
-    var siteConf = config.USERS[siteKey];
-    if (!siteConf) {
-      return res.sendStatus(400);
-    }
+  var siteKey = req.body.username;
+  var password = req.body.password;
 
-    if (siteConf.password != req.body.password) {
-      return res.sendStatus(400);
-    }
-
-    req.session.siteKey = siteKey;
-    res.send();
-  });
+  return store.checkLogin(siteKey, password)
+      .then(function(success) {
+        if (success) {
+          console.log("Logged in " + siteKey);
+          req.session[SESSION.SITE_KEY] = siteKey;
+          res.send("Ok");
+        } else {
+          console.log("Login failed for " + siteKey);
+          res.sendStatus(403)
+        }
+      })
+      .catch(function(err) {
+        console.log("Error checking login: " + err);
+        res.status(500).send("Internal error checking login");
+      });
 }));
 
 
 app.post('/api/upload-url', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
-  // an existing site needs authentication
-  var siteKey = req.body.sitekey;
+  var sitekey = req.body.sitekey;
   var version = req.body.version;
 
-  if (!siteKey || !version) {
+  if (!sitekey || !version) {
     throw {httpcode:400, message:'sitekey and version required'};
-  }
-
-  var bucketKey = siteKey + '/' + version;
-
-  // FIXME: can only log in to one site at a time this way
-  var siteUser = config.USERS[siteKey];
-  if (siteUser && siteKey != req.session.siteKey) {
-    res.status(401).send();
-    return Q.resolve();
   }
 
   var s3 = new AWS.S3({
@@ -128,32 +128,48 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
     region: config.AWS.region,
     bucket: config.AWS.bucket
   });
+  var bucketKey = sitekey + '/' + version;
 
-  return Q.ninvoke(s3, 'headObject', {
-     Bucket: config.AWS.bucket, 
-     Key: bucketKey
-  }).catch(function() {
-    // object doesn't exist, create it
-    console.log("No object for " + bucketKey + ", creating it.");
-    return Q.ninvoke(s3, 'putObject', {
-       Bucket: config.AWS.bucket, 
-       Key: bucketKey,
-       ACL: 'public-read',
-       Body: '(function(){})()'
-    });
-  }).then(function() {
-    return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
-      Bucket: config.AWS.bucket,
-      Key: bucketKey,
-      ContentType: req.body.contentType,
-      CacheControl: req.body.cacheControl,
-      Expires: 60 * 5, // 5 minutes,
-      ACL: 'public-read'
-    });
-  }).then(function(url) {
-    console.log(bucketKey + " -> " + url);
-    res.send({putUrl: url});
-  });
+  // FIXME: can only log in to one site at a time this way
+  var qAuthorized = (sitekey === req.session[SESSION.SITE_KEY]) ? Q.resolve(true) :
+      store.getSite(sitekey).then(function(site) {
+        // an existing site needs authentication, non-existing are world-writable
+        return site == null;
+      });
+
+  return qAuthorized.then(function(authorized) {
+        if (!authorized) {
+          console.log("Unauthorized for requested site", sitekey, "session:", req.session[SESSION.SITE_KEY]);
+          res.status(401).send();
+          return Q.resolve();
+        } else {
+          return Q.ninvoke(s3, 'headObject', {
+            Bucket: config.AWS.bucket,
+            Key: bucketKey
+          }).catch(function() {
+            // object doesn't exist, create it
+            console.log("No object for " + bucketKey + ", creating it.");
+            return Q.ninvoke(s3, 'putObject', {
+              Bucket: config.AWS.bucket,
+              Key: bucketKey,
+              ACL: 'public-read',
+              Body: '(function(){})()'
+            });
+          }).then(function() {
+            return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
+              Bucket: config.AWS.bucket,
+              Key: bucketKey,
+              ContentType: req.body.contentType,
+              CacheControl: req.body.cacheControl,
+              Expires: 60 * 5, // 5 minutes,
+              ACL: 'public-read'
+            });
+          }).then(function(url) {
+            console.log(bucketKey + " -> " + url);
+            res.send({putUrl: url});
+          });
+        }
+      });
 }));
 
 function setCorsHeaders(req, res) {
@@ -171,6 +187,13 @@ function setCorsHeaders(req, res) {
 }
 
 ///// Bootstrap /////
+
+store.testConnection().then(function () {
+  console.log("Datastore connection ok");
+}).catch(function(err) {
+  console.log("Datastore connection failed");
+  throw err;
+}).done();
 
 mandrill.users.info(function(info) {
   console.log('Mandrill reputation: ' + info.reputation + ', Hourly Quota: ' + info.hourly_quota);

@@ -5,20 +5,21 @@
   "main": "server/app.js",
   "private": true,
   "dependencies": {
-    "express": "4.9.7",
-    "q": "1.0.1",
-    "lodash": "2.4.1",
-    "cookie-session": "1.0.2",
     "aws-sdk": "2.0.23",
     "body-parser": "1.9.2",
-    "mandrill-api":"1.0.41"
+    "cookie-session": "1.0.2",
+    "express": "4.9.7",
+    "lodash": "2.4.1",
+    "mandrill-api":"1.0.41",
+    "pg": "3.6.3",
+    "q": "1.0.1"
   },
   "devDependencies": {
-    "webpack": "1.4.9",
-    "webpack-dev-server": "1.4.9",
-    "jsdom": "1.0.3",
     "css-loader": "0.9.0",
     "jasmine-node": "1.14.5",
-    "sass-loader":"0.3.0"
+    "jsdom": "1.0.3",
+    "sass-loader":"0.3.0",
+    "webpack": "1.4.9",
+    "webpack-dev-server": "1.4.9"
   }
 }

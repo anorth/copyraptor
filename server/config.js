@@ -4,11 +4,5 @@ module.exports = {
     bucket: 'com.copyraptor.content-dev'
   },
 
-  USERS: {
-    editordemo: { password: 'editordemo' },
-    helix: { password: 'helix' },
-    firstorder: { password: 'firstorder' }
-  },
-
   APP_SECRET: '02930asjfo;aj0[129i30[kasdjfkasjdf0192asfd'
 };
