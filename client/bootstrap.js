@@ -37,6 +37,7 @@ util.foreach(util.queryParams(), function(key, value) {
 if (params.site === "") {
   params.site = document.location.host;
 }
+params.site = encodeURIComponent(params.site);
 
 if (staticPath) {
   var m = staticPath.match(new RegExp("http(s)?://([\\w:.]+).*"));

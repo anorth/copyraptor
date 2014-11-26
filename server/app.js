@@ -92,7 +92,7 @@ app.options(/\/api\/.*/, requestHandler(function(req, res) {
 
 app.post('/api/login', requestHandler(function (req, res) {
   setCorsHeaders(req, res);
-  var siteKey = req.body.username;
+  var siteKey = encodeURIComponent(req.body.username);
   var password = req.body.password;
 
   return store.checkLogin(siteKey, password)
@@ -115,11 +115,13 @@ app.post('/api/login', requestHandler(function (req, res) {
 
 app.post('/api/upload-url', requestHandler(function(req, res) {
   setCorsHeaders(req, res);
-  var sitekey = req.body.sitekey;
+  var sitekey = encodeURIComponent(req.body.sitekey);
   var version = req.body.version;
 
   if (!sitekey || !version) {
     throw {httpcode:400, message:'sitekey and version required'};
+  } else if (version !== 'live' && version !== 'draft') {
+    throw {httpcode:400, message:'invalid sitekey, must be draft or live'};
   }
 
   var s3 = new AWS.S3({
