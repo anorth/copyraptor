@@ -19,12 +19,65 @@
   }
 }
 
+// See http://joshbroton.com/quick-fix-sass-mixins-for-css-keyframe-animations/
+@mixin animation($animate...) {
+  $max: length($animate);
+  $animations: '';
+
+  @for $i from 1 through $max {
+    $animations: #{$animations + nth($animate, $i)};
+
+    @if $i < $max {
+      $animations: #{$animations + ", "};
+    }
+  }
+  -webkit-animation: $animations;
+  -moz-animation:    $animations;
+  -o-animation:      $animations;
+  animation:         $animations;
+}
+
+@mixin keyframes($animationName) {
+  @-webkit-keyframes #{$animationName} {
+    @content;
+  }
+  @-moz-keyframes #{$animationName} {
+    @content;
+  }
+  @-o-keyframes #{$animationName} {
+    @content;
+  }
+  @keyframes #{$animationName} {
+    @content;
+  }
+}
+
 $panel-padding-v: 8px;
 $panel-padding-h: 20px;
 $button-height: 30px;
 
 $background-color: rgba(0, 0, 0, 0.75);
 $button-green: #009600;
+
+@include keyframes(copyraptor-scaleout) {
+  0% {
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 100% {
+      transform: scale(1.0);
+      -webkit-transform: scale(1.0);
+      opacity: 0;
+    }
+}
+
+@include keyframes(copyraptor-flash) {
+  0% {
+    background-color: #4fa04a;
+  } 100% {
+
+  }
+}
+
 
 .copyraptor-app {
   @import 'reset';
@@ -52,15 +105,7 @@ $button-green: #009600;
     color: white;
     font-size: 16px;
     letter-spacing: 0.4px;
-
-    &.loading:after {
-      content: ' ';
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-    }
   }
-  @import 'button_loading';
 
   a {
     text-decoration: underline;
@@ -120,7 +165,6 @@ $button-green: #009600;
 
       .viewstate {
         display: inline-block;
-//        vertical-align: top;
         label {
           display: block;
         }
@@ -144,14 +188,8 @@ $button-green: #009600;
         display: inline-block;
         margin-left: 140px;
 
-//        input[type=checkbox] {
-//          display: inline-block;
-//          padding: 0 10px;
-//        }
-
         button.publish {
           display: inline-block;
-//          vertical-align: top;
           width: 170px;
         }
 
@@ -189,7 +227,7 @@ $button-green: #009600;
       }
     }
 
-    .statusmessage {
+    .status {
       display: block;
       height: 20px;
       width: 700px;
@@ -197,6 +235,25 @@ $button-green: #009600;
       margin-left: 280px;
       margin-bottom: -4px;
       color: #dddddd;
+
+      .message {
+        display: inline-block;
+        &.flash {
+          @include animation('copyraptor-flash 1.0s ease-in')
+        }
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        vertical-align: middle;
+        margin-left: 6px;
+        background-color: #d7d7d7;
+
+        border-radius: 100%;
+        @include animation('copyraptor-scaleout 1.0s infinite ease-in-out');
+      }
     }
   }
 

@@ -38,7 +38,8 @@ function EditorApp(injector, env, delegate) {
   var focusRect = new FocusRect();
   var viewState, saveState;
 
-  var statusMessage = util.divc('statusmessage', '');
+  var statusMessage = util.divc('message', '');
+  var spinner = util.divc('spinner');
 
   var draftState = null;
   var publishedState = null;
@@ -83,18 +84,24 @@ function EditorApp(injector, env, delegate) {
   }
 
   setSaveState(SAVESTATE.SAVED);
-  function setSaveState(state) {
-    assert(SAVESTATE[state]);
-    if (state == SAVESTATE.SAVED) {
+  function setSaveState(newState) {
+    assert(SAVESTATE[newState]);
+    if (newState == SAVESTATE.SAVED) {
       // don't clobber unsaved state if pending edits while saving.
       assert(saveState != SAVESTATE.UNSAVED);
     }
 
     if (saveState != null) {
-      statusMessage.innerText = (state == SAVESTATE.SAVED ? 'Draft saved' : 'Saving...');
+      if (newState === SAVESTATE.SAVED) {
+        statusMessage.innerText = 'Draft saved';
+        hide(spinner);
+      } else {
+        statusMessage.innerText = 'Saving...';
+        show('inline-block', spinner);
+      }
     }
 
-    saveState = state;
+    saveState = newState;
   }
 
   var editableCheckbox = util.checkBox('Enable editing', editable, function(isEditable) {
@@ -127,10 +134,16 @@ function EditorApp(injector, env, delegate) {
   var publishButton = util.promiseButton('Publish this copy', {className: "publish"}, function () {
     editor.detach();
     var content = injector.getContent();
+    statusMessage.innerText = "Publishing...";
+    statusMessage.classList.remove('flash');
+    show('inline-block', spinner);
     // Could use Q.all, but perhaps best to save in order so draft always > live.
     return save('live').then(function () {
       publishedState = util.cloneJson(content);
       delegate.published();
+      statusMessage.innerText = "Rawr! Your changes are now published.";
+      statusMessage.classList.add('flash');
+      hide(spinner);
     });
   });
 
@@ -164,7 +177,8 @@ function EditorApp(injector, env, delegate) {
   });
 
   function init() {
-    controls.style.display = '';
+    hide(spinner);
+    show(controls);
     document.body.addEventListener('mouseover', contentHandler(enterElem));
     document.body.addEventListener('mouseout',  contentHandler(leaveElem));
     document.body.addEventListener('mousedown', contentHandler(mousedownElem), true);
@@ -269,7 +283,10 @@ function EditorApp(injector, env, delegate) {
           editNowButton,
           closeButton
       ),
-      statusMessage,
+      util.divc('status',
+          statusMessage,
+          spinner
+      ),
       loginDiv,
       focusRect
   );
@@ -295,9 +312,14 @@ function EditorApp(injector, env, delegate) {
     }
   }
 
-  function show(/*elms...*/) {
-    for (var i = 0; i < arguments.length; ++i) {
-      arguments[i].style.display = "";
+  function show(displayType /*,elms...*/) {
+    var i = 0, display = "";
+    if (typeof displayType === 'string') {
+      display = displayType;
+      i = 1;
+    }
+    for (; i < arguments.length; ++i) {
+      arguments[i].style.display = display;
     }
   }
 

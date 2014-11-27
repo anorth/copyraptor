@@ -1,21 +1,22 @@
 var express = require('express');
-var app = express();
 var datastore = require('./datastore');
+var crypto = require('crypto');
 var Q = require('q');
 var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './config');
 var bodyParser = require('body-parser');
-var session = require('cookie-session');
 var AWS = require('aws-sdk');
 var Mandrill = require('mandrill-api/mandrill');
 
 var store = new datastore.Datastore(process.env.DATABASE_URL);
 var mandrill = new Mandrill.Mandrill();
 
+var app = express();
 app.set('config', config);
 
-var SESSION = {
-  SITE_KEY: 'siteKey'
+var HEADERS = {
+  AUTH: 'X-Copyraptor-Auth'
 };
+var AUTH_LIFETIME_MS = 14 * (24 * 60 * 60 * 1000);
 
 function requestHandler(handler) {
   return function(req, res) {
@@ -31,9 +32,6 @@ function requestHandler(handler) {
   }
 }
 
-app.use(session({
-  secret: config.APP_SECRET
-}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(__dirname + '/static'));
@@ -55,7 +53,7 @@ app.post('/signup', requestHandler(function(req, res) {
         "Message:\n" + signupMessage +"\n";
 
     var message = {
-      "subject": "Copyraptor signup: " + signupSite,
+      "subject": "Copyraptor signup for " + signupSite,
       "text": messageContent,
       "from_email": "website@copyraptor.com",
       "from_name": "Copyraptor",
@@ -99,8 +97,11 @@ app.post('/api/login', requestHandler(function (req, res) {
       .then(function(success) {
         if (success) {
           console.log("Logged in " + siteKey);
-          req.session[SESSION.SITE_KEY] = siteKey;
-          res.send("Ok");
+          res.setHeader('Content-Type', 'application/json');
+          res.send(JSON.stringify({
+            token: authToken(siteKey),
+            expires: Date.now() + AUTH_LIFETIME_MS
+          }));
         } else {
           console.log("Login failed for " + siteKey);
           res.sendStatus(403)
@@ -133,7 +134,7 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
   var bucketKey = sitekey + '/' + version;
 
   // FIXME: can only log in to one site at a time this way
-  var qAuthorized = (sitekey === req.session[SESSION.SITE_KEY]) ? Q.resolve(true) :
+  var qAuthorized = (authToken(sitekey) === req.header(HEADERS.AUTH)) ? Q.resolve(true) :
       store.getSite(sitekey).then(function(site) {
         // an existing site needs authentication, non-existing are world-writable
         return site == null;
@@ -141,7 +142,7 @@ app.post('/api/upload-url', requestHandler(function(req, res) {
 
   return qAuthorized.then(function(authorized) {
         if (!authorized) {
-          console.log("Unauthorized for requested site", sitekey, "session:", req.session[SESSION.SITE_KEY]);
+          console.log("Unauthorized for requested site", sitekey, "token:", req.header(HEADERS.AUTH));
           res.status(401).send();
           return Q.resolve();
         } else {
@@ -186,6 +187,12 @@ function setCorsHeaders(req, res) {
       res.set('Access-Control-Allow-Headers', requestHeaders);
     }
   }
+}
+
+function authToken(data) {
+  var hmac = crypto.createHmac('sha1', config.APP_SECRET);
+  hmac.update(data);
+  return hmac.digest('base64');
 }
 
 ///// Bootstrap /////

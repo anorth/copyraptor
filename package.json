@@ -7,7 +7,6 @@
   "dependencies": {
     "aws-sdk": "2.0.23",
     "body-parser": "1.9.2",
-    "cookie-session": "1.0.2",
     "express": "4.9.7",
     "lodash": "2.4.1",
     "mandrill-api":"1.0.41",

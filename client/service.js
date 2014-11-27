@@ -42,16 +42,16 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     var cacheControl = 'public, max-age=' + cacheSecs + ', s-maxage=' + cacheSecs;
 
     return util.http("POST", apiBase + '/upload-url', {
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-Copyraptor-Auth': loadAuth().token},
         withCredentials: true
     }).send(JSON.stringify({
       sitekey: sitekey,
       version: version,
       cacheControl: cacheControl,
       contentType: 'application/javascript'
-    })).then(function(resp) {
+    })).then(function(xhr) {
       log("Saving", content);
-      var putUrl = JSON.parse(resp.responseText).putUrl;
+      var putUrl = JSON.parse(xhr.responseText).putUrl;
       var headers = {
         'Content-Type': 'application/javascript',
         'Cache-Control': cacheControl // needed in headers as well as signed request params
@@ -80,12 +80,32 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
 
   this.doAuth = function(username, password) {
     return util.http("POST", apiBase + '/login', {
-        headers: {'Content-Type': 'application/json'},
-        withCredentials: true
+      headers: {'Content-Type': 'application/json'},
+      withCredentials: true
     })
-    .send(JSON.stringify({
-      username: username,
-      password: password
-    }))
+        .send(JSON.stringify({
+          username: username,
+          password: password
+        }))
+        .then(function(xhr) {
+          console.log(xhr);
+          var authData = JSON.parse(xhr.responseText);
+          if (!!authData.token) {
+            saveAuth(authData);
+          }
+        });
+  };
+
+  function loadAuth() {
+    try {
+      return JSON.parse(localStorage.getItem('copyraptor-auth') || '{token: null}');
+    } catch (e) {
+      localStorage.removeItem('copyraptor-auth');
+      return {token: null};
+    }
+  }
+
+  function saveAuth(authData) {
+    localStorage.setItem('copyraptor-auth', JSON.stringify(authData));
   }
 };
