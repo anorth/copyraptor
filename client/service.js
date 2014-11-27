@@ -88,21 +88,34 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
           password: password
         }))
         .then(function(xhr) {
-          console.log(xhr);
-          var authData = JSON.parse(xhr.responseText);
-          if (!!authData.token) {
-            saveAuth(authData);
+          //log(xhr);
+          try {
+            var authData = JSON.parse(xhr.responseText);
+            if (!!authData.token) {
+              saveAuth(authData);
+            }
+          } catch (e) {
+            error("Invalid JSON in auth response", authData);
           }
         });
   };
 
   function loadAuth() {
-    try {
-      return JSON.parse(localStorage.getItem('copyraptor-auth') || '{token: null}');
-    } catch (e) {
-      localStorage.removeItem('copyraptor-auth');
-      return {token: null};
+    var authData = {token: null};
+    var stored = localStorage.getItem('copyraptor-auth');
+    if (!!stored) {
+      try {
+        var parsed = JSON.parse(stored);
+        if (parsed.expires > Date.now()) {
+          authData = parsed;
+        }
+      } catch (e) {
+      }
+      if (!authData.token) {
+        localStorage.removeItem('copyraptor-auth');
+      }
     }
+    return authData;
   }
 
   function saveAuth(authData) {
