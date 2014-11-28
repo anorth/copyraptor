@@ -1,4 +1,4 @@
-var datastore = require('./datastore');
+var datastore = require('../datastore');
 var Q = require('q');
 
 describe('Datastore tests', function () {
