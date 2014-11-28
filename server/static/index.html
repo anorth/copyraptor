@@ -17,6 +17,15 @@
 		<script src="js/skel.min.js"></script>
 		<script src="js/skel-layers.min.js"></script>
 		<script src="js/init.js"></script>
+		<script>
+			(function($) {
+				$(document).ready(function() {
+					setTimeout(function() {
+						$('video').get(0).play();
+					}, 5 * 1000);
+				});
+			})(jQuery);
+		</script>
 		<script src="https://code.copyraptor.com/copyraptor.js" data-copyraptor-site="copyraptor.com" data-copyraptor-auto></script>
 		<script src="//cdn.optimizely.com/js/1038438754.js"></script>
 		<noscript>
@@ -75,7 +84,14 @@
 						<h2>You shouldn't need to write code
 						<br />
 						just to change the words</h2>
-						<p>Copyraptor <strong>works on any site</strong>&mdash;edit directly in your browser.<br/>
+						<p>
+							<video width="700" controls autoplay muted loop>
+								<source src="http://firstorder.com.au.s3.amazonaws.com/cr-screencast.webm" type="video/webm"/>
+								<source src="http://firstorder.com.au.s3.amazonaws.com/cr-screencast.mp4" type="video/mp4"/>
+								<source src="http://firstorder.com.au.s3.amazonaws.com/cr-screencast.ogv" type="video/ogg"/>
+							</video><br/><br/>
+
+							Copyraptor <strong>works on any site</strong>&mdash;edit directly in your browser.<br/>
 							Change the words on your web app or site and publish changes <strong>instantly</strong>.
 							</p>
 					</header>
