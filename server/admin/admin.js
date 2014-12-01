@@ -2,16 +2,27 @@
 var express = require('express');
 var Q = require('q');
 var bodyParser = require('body-parser');
+var passport = require('passport');
+var BasicStrategy = require('passport-http').BasicStrategy;
 
 var requests = require('../requests');
 
+passport.use(new BasicStrategy(function(userid, password, done) {
+      if (userid !== 'copyraptor') { return done(null, false) }
+      if (password !== process.env.ADMIN_PASSWORD) { return done(null, false) }
+      return done(null, userid);
+    }
+));
 
 module.exports = function createAdmin(store) {
   var admin = express();
   admin.use(express.static(__dirname + '/static'));
   admin.use(bodyParser.json());
+  admin.use(passport.initialize());
+  admin.use(passport.authenticate('basic', { session: false }));
 
-  admin.post('/signup', requests.promiseHandler(function(req, res) {
+  admin.post('/signup',
+      requests.promiseHandler(function(req, res) {
     return Q.resolve().then(function() {
       var name = req.body.name || undefined;
       var email = req.body.email || undefined;
