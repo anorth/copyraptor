@@ -10,7 +10,8 @@
     "express": "4.9.7",
     "lodash": "2.4.1",
     "mandrill-api":"1.0.41",
-    "passport-http": "",
+    "passport": "0.1.18",
+    "passport-http": "0.2.2",
     "pg": "3.6.3",
     "q": "1.0.1"
   },
