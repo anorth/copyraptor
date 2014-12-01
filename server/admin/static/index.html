@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html ng-app="admin">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0/angular-resource.min.js"></script>
+    <script>
+
+        var base = document.location.protocol + '//' + document.location.host + '/admin';
+
+        angular.module('admin', [])
+                .controller('AdminController', ['$scope', '$http', '$sce', function ($scope, $http, $sce) {
+                    $scope.inflight = false;
+
+                    $scope.signup = function(email, name, siteKey) {
+                        $scope.inflight = true;
+                        return post('/signup', {email: email, name: name, siteKey: siteKey})
+                                .success(function (resp) {
+                                    console.log(resp);
+                                    $scope.message = "Signed up " + resp.name + " <" + resp.email + "> for site [" +
+                                            resp.siteKey + "] with password " + resp.password;
+                                })
+                                .catch(failed)
+                                .then(done);
+                    };
+
+                    function post(path, data) {
+                        $scope.inflight = true;
+                        return $http.post(base + path, data);
+                    }
+
+                    function get(path) {
+                        $scope.inflight = true;
+                        return $http.get(base + path);
+                    }
+
+                    function failed(err) {
+                        console.error(err);
+                        $scope.message = err.data;
+                    }
+
+                    function done() {
+                        $scope.inflight = false;
+                    }
+                }]);
+    </script>
+</head>
+
+<body>
+<div ng-controller="AdminController">
+    <span class="inflight" ng-show="inflight">Request...</span> <div class="message">{{message}}</div>
+
+    <h3>New sign-up</h3>
+    <form ng-submit="signup(email, name, siteKey)">
+        Name: <input type="text" ng-model="name" required=""/><br/>
+        Email: <input type="email" ng-model="email" required=""/><br/>
+        Site: <input type="text" ng-model="siteKey" required=""/><br/>
+        <input type="submit" value="Submit sign-up">
+    </form>
+</div>
+</body>
+</html>

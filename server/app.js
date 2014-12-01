@@ -5,6 +5,7 @@ var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './
 var datastore = require('./datastore');
 var createApi = require('./api');
 var createSite = require('./website');
+var createAdmin = require('./admin/admin');
 
 var store = new datastore.Datastore(process.env.DATABASE_URL);
 var mandrill = new Mandrill.Mandrill();
@@ -21,6 +22,10 @@ app.use('/', website);
 var api = createApi(config, store);
 app.use('/api', api);
 
+///// Admin site /////
+
+var admin = createAdmin(store);
+app.use('/admin', admin);
 
 ///// Bootstrap /////
 
