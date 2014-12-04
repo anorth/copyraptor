@@ -38,6 +38,11 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     assert(version === 'draft' || version === 'live');
 
     var payload = makePayload(content);
+    var editCount = 0;
+    util.foreach(content.changes, function(k) {
+      ++editCount;
+    });
+
     var cacheSecs = util.CONTENT_CACHE_TIME_MS / 1000;
     var cacheControl = 'public, max-age=' + cacheSecs + ', s-maxage=' + cacheSecs;
 
@@ -47,6 +52,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
     }).send(JSON.stringify({
       sitekey: sitekey,
       version: version,
+      editCount: editCount,
       cacheControl: cacheControl,
       contentType: 'application/javascript'
     })).then(function(xhr) {

@@ -23,7 +23,7 @@ var apiConf = {
   awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
   awsBucket: process.env.AWS_BUCKET,
   awsRegion: process.env.AWS_REGION,
-  mixpanelToken: process.env.MIXPANEL_TOKEN || "cc",
+  mixpanelToken: process.env.MIXPANEL_TOKEN || "x",
   sessionSecret: process.env.APP_SECRET
 };
 var api = createApi(apiConf, store);

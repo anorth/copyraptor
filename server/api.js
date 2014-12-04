@@ -5,6 +5,7 @@ var crypto = require('crypto');
 var express = require('express');
 var Mixpanel = require('mixpanel');
 var Q = require('q');
+var _ = require('underscore');
 
 var requests = require('./requests');
 
@@ -36,6 +37,7 @@ module.exports = function createApi(config, store) {
         .then(function(success) {
           if (success) {
             console.log("Logged in " + siteKey);
+            track(siteKey, "Sign in succeeded");
             res.setHeader('Content-Type', 'application/json');
             res.send(JSON.stringify({
               token: authToken(siteKey),
@@ -43,6 +45,7 @@ module.exports = function createApi(config, store) {
             }));
           } else {
             console.log("Login failed for " + siteKey);
+            track(siteKey, "Sign in failed");
             res.sendStatus(403)
           }
         })
@@ -55,10 +58,10 @@ module.exports = function createApi(config, store) {
 
   api.post('/upload-url', requests.promiseHandler(function(req, res) {
     setCorsHeaders(req, res);
-    var sitekey = encodeURIComponent(req.body.sitekey);
+    var siteKey = encodeURIComponent(req.body.sitekey);
     var version = req.body.version;
 
-    if (!sitekey || !version) {
+    if (!siteKey || !version) {
       throw {httpcode:400, message:'sitekey and version required'};
     } else if (version !== 'live' && version !== 'draft') {
       throw {httpcode:400, message:'invalid sitekey, must be draft or live'};
@@ -70,21 +73,29 @@ module.exports = function createApi(config, store) {
       region: config.awsRegion,
       bucket: config.awsBucket
     });
-    var bucketKey = sitekey + '/' + version;
+    var bucketKey = siteKey + '/' + version;
 
     // FIXME: can only log in to one site at a time this way
-    var qAuthorized = (authToken(sitekey) === req.header(HEADERS.AUTH)) ? Q.resolve(true) :
-        store.getSite(sitekey).then(function(site) {
+    var isLoggedIn = (authToken(siteKey) === req.header(HEADERS.AUTH));
+    var qAuthorized = isLoggedIn ? Q.resolve(true) :
+        store.getSite(siteKey).then(function(site) {
           // an existing site needs authentication, non-existing are world-writable
           return site == null;
         });
 
     return qAuthorized.then(function(authorized) {
       if (!authorized) {
-        console.log("Unauthorized for requested site", sitekey, "token:", req.header(HEADERS.AUTH));
+        console.log("Unauthorized for requested site", siteKey, "token:", req.header(HEADERS.AUTH));
+        track(siteKey, "Authentication requested");
         res.status(401).send();
         return Q.resolve();
       } else {
+        var eventName = (version === 'live') ? 'Publish' : 'Save draft';
+        var props = {
+          'Logged in': isLoggedIn,
+          'Edit count': req.body.editCount
+        };
+        track(siteKey, eventName, props);
         return Q.ninvoke(s3, 'headObject', {
           Bucket: config.awsBucket,
           Key: bucketKey
@@ -118,6 +129,11 @@ module.exports = function createApi(config, store) {
     var hmac = crypto.createHmac('sha1', config.sessionSecret);
     hmac.update(data);
     return hmac.digest('base64');
+  }
+
+  function track(siteKey, event, properties) {
+    console.log("Track: " + siteKey + " \"" + event + "\" " + JSON.stringify(properties));
+    mixpanel.track(event, _.extend({distinct_id: siteKey}, properties));
   }
 
   return api;
