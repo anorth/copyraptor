@@ -1,7 +1,6 @@
 var express = require('express');
 var Mandrill = require('mandrill-api/mandrill');
 
-var config = require((!!process.env.ENV) ? ('./config-' + process.env.ENV) : './config');
 var datastore = require('./datastore');
 var createApi = require('./api');
 var createSite = require('./website');
@@ -19,7 +18,15 @@ app.use('/', website);
 
 ///// API /////
 
-var api = createApi(config, store);
+var apiConf = {
+  awsAccessKey: process.env.AWS_ACCESS_KEY_ID,
+  awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
+  awsBucket: process.env.AWS_BUCKET,
+  awsRegion: process.env.AWS_REGION,
+  mixpanelToken: process.env.MIXPANEL_TOKEN || "cc",
+  sessionSecret: process.env.APP_SECRET
+};
+var api = createApi(apiConf, store);
 app.use('/api', api);
 
 ///// Admin site /////

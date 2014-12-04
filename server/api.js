@@ -1,9 +1,10 @@
 
-var express = require('express');
-var crypto = require('crypto');
-var Q = require('q');
-var bodyParser = require('body-parser');
 var AWS = require('aws-sdk');
+var bodyParser = require('body-parser');
+var crypto = require('crypto');
+var express = require('express');
+var Mixpanel = require('mixpanel');
+var Q = require('q');
 
 var requests = require('./requests');
 
@@ -15,6 +16,7 @@ var AUTH_LIFETIME_MS = 14 * (24 * 60 * 60 * 1000);
 
 
 module.exports = function createApi(config, store) {
+  var mixpanel = Mixpanel.init(config.mixpanelToken);
   var api = express();
   api.use(bodyParser.json());
 
@@ -63,10 +65,10 @@ module.exports = function createApi(config, store) {
     }
 
     var s3 = new AWS.S3({
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID, // TODO: dep inject
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      region: config.AWS.region,
-      bucket: config.AWS.bucket
+      accessKeyId: config.awsAccessKey,
+      secretAccessKey: config.awsSecretKey,
+      region: config.awsRegion,
+      bucket: config.awsBucket
     });
     var bucketKey = sitekey + '/' + version;
 
@@ -84,20 +86,20 @@ module.exports = function createApi(config, store) {
         return Q.resolve();
       } else {
         return Q.ninvoke(s3, 'headObject', {
-          Bucket: config.AWS.bucket,
+          Bucket: config.awsBucket,
           Key: bucketKey
         }).catch(function() {
           // object doesn't exist, create it
           console.log("No object for " + bucketKey + ", creating it.");
           return Q.ninvoke(s3, 'putObject', {
-            Bucket: config.AWS.bucket,
+            Bucket: config.awsBucket,
             Key: bucketKey,
             ACL: 'public-read',
             Body: '(function(){})()'
           });
         }).then(function() {
           return Q.ninvoke(s3, 'getSignedUrl', 'putObject', {
-            Bucket: config.AWS.bucket,
+            Bucket: config.awsBucket,
             Key: bucketKey,
             ContentType: req.body.contentType,
             CacheControl: req.body.cacheControl,
@@ -113,7 +115,7 @@ module.exports = function createApi(config, store) {
   }));
 
   function authToken(data) {
-    var hmac = crypto.createHmac('sha1', config.APP_SECRET);
+    var hmac = crypto.createHmac('sha1', config.sessionSecret);
     hmac.update(data);
     return hmac.digest('base64');
   }
