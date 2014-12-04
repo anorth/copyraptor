@@ -176,6 +176,11 @@ function EditorApp(injector, env, delegate) {
     me.hideToolbar();
   });
 
+  var logoutButton = util.button('Sign out', {className: 'logout'}, function() {
+    service.logout();
+    me.hideToolbar();
+  });
+
   function init() {
     hide(spinner);
     show(controls);
@@ -281,7 +286,8 @@ function EditorApp(injector, env, delegate) {
           editorTools,
 
           editNowButton,
-          closeButton
+          closeButton,
+          logoutButton
       ),
       util.divc('status',
           statusMessage,

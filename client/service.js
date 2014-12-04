@@ -100,6 +100,10 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
         });
   };
 
+  this.logout = function() {
+    clearAuth();
+  };
+
   function loadAuth() {
     var authData = {token: null};
     var stored = localStorage.getItem('copyraptor-auth');
@@ -112,7 +116,7 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
       } catch (e) {
       }
       if (!authData.token) {
-        localStorage.removeItem('copyraptor-auth');
+        clearAuth()
       }
     }
     return authData;
@@ -120,5 +124,9 @@ module.exports = function CopyraptorService(apiBase, sitekey, contentSrc) {
 
   function saveAuth(authData) {
     localStorage.setItem('copyraptor-auth', JSON.stringify(authData));
+  }
+
+  function clearAuth() {
+    localStorage.removeItem('copyraptor-auth');
   }
 };

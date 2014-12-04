@@ -214,9 +214,23 @@ $button-green: #009600;
         top: $panel-padding-v;
         right: $panel-padding-h;
         padding: 4px 10px 10px 10px;
-        background: none;
+        background-color: rgba(255, 255, 255, 0.06);
         &:hover {
-          background-color: rgba(255, 255, 255, 0.06);
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+
+      .logout {
+        position: absolute;
+        display: inline-block;
+        top: $panel-padding-v;
+        right: $panel-padding-h + 36px;
+        padding: 4px 10px 10px 10px;
+        font-size: 12px;
+        color: #bbbbbb;
+        background-color: rgba(255, 255, 255, 0.06);
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.1);
         }
       }
 
